@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tracker</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --panel-bg: #1c1c1e;
+            --text-main: #ffffff;
+            --text-sec: #8e8e93;
+            --border-color: #2c2c2e;
+            --c-orange: #ff9f0a;
+            --c-green: #30d158;
+            --c-red: #ff453a;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; padding-top: 180px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); user-select: none; }
+        
+        /* Fixed Header */
+        .header { position: fixed; top: 0; left: 0; right: 0; background-color: var(--bg-color); z-index: 100; border-bottom: 1px solid var(--border-color); }
+        
+        /* Nav */
+        .week-nav-container { display: flex; align-items: center; padding: 10px 5px; }
+        .nav-btn { background: none; border: none; color: var(--text-sec); font-size: 20px; padding: 10px; cursor: pointer; }
+        .week-nav { display: flex; flex: 1; justify-content: space-between; overflow: hidden; touch-action: pan-y; }
+        .day { display: flex; flex-direction: column; align-items: center; flex: 1; padding: 8px 0; cursor: pointer; border-radius: 8px; color: var(--text-sec); }
+        .day.active { background-color: #2c2c2e; color: var(--text-main); }
+        .day-l { font-size: 12px; margin-bottom: 4px; font-weight: 500; }
+        .day-n { font-size: 16px; font-weight: 600; }
+        
+        /* Macros */
+        .macros-panel { display: flex; justify-content: space-between; padding: 10px 15px 15px; }
+        .macro { flex: 1; text-align: center; padding: 0 5px; }
+        .macro-val { font-size: 13px; margin-bottom: 6px; font-weight: 500; white-space: nowrap; }
+        .macro-val span { color: var(--text-sec); }
+        .bar-bg { width: 100%; height: 4px; background-color: #333; border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+        
+        /* Lists */
+        .list-container { padding: 10px 15px 30px; }
+        .section-title { font-size: 13px; color: var(--text-sec); margin: 20px 0 10px 5px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /*.item-card { background-color: var(--panel-bg); border-radius: 10px; margin-bottom: 10px; padding: 14px 15px; display: flex; align-items: center; border: 1px solid var(--border-color); transition: opacity 0.2s; }*/
+        .item-card { background-color: var(--panel-bg); border-radius: 10px; margin-bottom: 5px; padding: 5px 15px; display: flex; align-items: center; border: 1px solid var(--border-color); transition: opacity 0.2s; }
+        .item-card.dragging { opacity: 0.5; border: 1px dashed var(--text-sec); }
+        
+        .drag-handle { color: #555; padding-right: 15px; font-size: 20px; cursor: grab; font-weight: bold; }
+        .item-info { flex: 1; min-width: 0; }
+        .item-name { font-size: 15px; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .item-macros { font-size: 12px; color: var(--text-sec); margin: 0; }
+        
+        .delete-btn { background: none; border: none; color: var(--c-red); font-size: 20px; padding-left: 15px; cursor: pointer; }
+        
+        /* Diferenciación visual de listas */
+        #logged-list .item-card { 
+            border-left: 4px solid var(--c-green); /* Borde verde para lo ya consumido */
+            padding-left: 11px; /* Compensa el grosor del borde para mantener la simetría */
+        }
+        #food-list .item-card { 
+            opacity: 0.85; /* Alimentos disponibles ligeramente más tenues */
+            background-color: #161618; /* Fondo sutilmente más oscuro para la "búsqueda" */
+        }
+
+        .food-controls { display: flex; align-items: center; background-color: #000; border-radius: 8px; padding: 4px; border: 1px solid var(--border-color); }
+        .ctrl-btn { background: none; border: none; color: var(--text-main); font-size: 18px; width: 30px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .ctrl-val { width: 24px; text-align: center; font-size: 14px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="week-nav-container" id="nav-container">
+            <button class="nav-btn" onclick="shiftWeek(-1)">‹</button>
+            <div class="week-nav" id="week-nav"></div>
+            <button class="nav-btn" onclick="shiftWeek(1)">›</button>
+        </div>
+        <div class="macros-panel" id="macros-panel"></div>
+    </div>
+
+    <div class="list-container">
+        <div id="logged-list"></div>
+        <div class="section-title">LISTADO ALIMENTOS</div>
+        <div id="food-list"></div>
+    </div>
+
+    <script>
+        // Database simulation (JSON Embedded)
+        const foodDB = [
+            { "id": "4f9c8d1a", "label": "🍎🥣🌾 1 manzana + 30g avena + 1 yogurt protein", "kcal": 312, "p": 13, "c": 53, "f": 5 },
+            { "id": "7b2e9c4f", "label": "🍌🥣🌾 1 plátano + 30g avena + 1 yogurt protein", "kcal": 322, "p": 14, "c": 51, "f": 5 },
+            { "id": "1d8a3f6c", "label": "🌾 30g avena", "kcal": 110, "p": 3, "c": 18, "f": 2 },
+            { "id": "9p8o7i6u", "label": "🥣 50g granola proteica", "kcal": 196, "p": 10, "c": 29, "f": 5 },
+            { "id": "2q3r1q1q" , "label" : "🍅 ½ tomate (62g)" , "kcal" : 11, "p" : 1, "c" : 3, "f" : 0 },
+            { "id": "1b2c3d4e", "label": "🍔 1 hamburguesa de soya Mister Veggie 100g", "kcal": 175, "p": 22, "c": 7, "f": 7 },
+            { "id": "5f6g7h8i", "label": "🧆 1 milanesa de soya Mister Veggie 80g", "kcal": 219, "p": 15, "c": 12, "f": 13 },
+            { "id": "9x8y7z6w", "label": "🥔🌽🥑 70g papa + 85g choclo + 100g palta", "kcal": 315, "p": 5, "c": 36, "f": 16 },
+{ "id": "9a9b9c9z", "label": "🧀 1 lámina de queso (20g)", "kcal": 70, "p": 5, "c": 0, "f": 6 },
+
+            { "id": "5v4w3x2y", "label": "🥔🥗🥚 200g papa + 120g betarraga + 2 huevos + 100g berros c/cebolla", "kcal": 421, "p": 19, "c": 60, "f": 11 },
+            { "id": "1m2n3o4p", "label": "🥖🧀🥬 1 marraqueta integral + 20g queso + 20g lechuga", "kcal": 332, "p": 13, "c": 51, "f": 8 },
+            { "id": "4j5k6l7m", "label": "🥔 200g papas cocidas", "kcal": 174, "p": 4, "c": 40, "f": 0 },
+            { "id": "5f6g7h8i", "label": "🧆 1 milanesa de soya Mister Veggie 80g", "kcal": 219, "p": 15, "c": 12, "f": 13 },
+            { "id": "1b2c3d4e", "label": "🍔 1 hamburguesa de soya Mister Veggie 100g", "kcal": 175, "p": 22, "c": 7, "f": 7 },
+            { "id": "3x4c5v6b", "label": "🌽 1 taza choclo cocido", "kcal": 150, "p": 4, "c": 32, "f": 2 },
+            { "id": "5n6m7l8k", "label": "🥗 1 taza repollo con lechuga", "kcal": 26, "p": 2, "c": 6, "f": 0 },
+            { "id": "9z8x7c6v", "label": "🥗 100g betarraga cocida", "kcal": 44, "p": 2, "c": 10, "f": 0 },
+
+            { "id": "9a1b2c3d", "label": "🥑 ½ palta 110g (35g)", "kcal": 56, "p": 1, "c": 1, "f": 5 },
+            { "id": "8e7f6a5b", "label": "🥑🥑 1 palta 110g (70g)", "kcal": 112, "p": 2, "c": 2, "f": 10 },
+            { "id": "4c3d2e1f", "label": "🥑 ½ palta 170g (55g)", "kcal": 88, "p": 1, "c": 1, "f": 8 },
+            { "id": "0a9b8c7d", "label": "🥑🥑 1 170g (110g)", "kcal": 176, "p": 2, "c": 2, "f": 16 },
+            { "id": "3a6f2c8d", "label": "🫓 1 hallulla int (75g)", "kcal": 211, "p": 7, "c": 33, "f": 6 },
+            { "id": "3b4g3d9w", "label": "🥖 1 marraqueta int", "kcal": 243, "p": 8, "c": 45, "f": 2 },
+            { "id": "5c7d8e9f", "label": "🫓🫓 2 hallullas int", "kcal": 422, "p": 16, "c": 66, "f": 12 },
+            { "id": "1a2b3c4d", "label": "🥖🥖 2 marraquetas int", "kcal": 486, "p": 16, "c": 90, "f": 4 },
+            { "id": "b3s1d2f9", "label": "🌾 6 galletas salvado (32g)", "kcal": 124, "p": 3, "c": 21, "f": 3 },
+            { "id": "a4x3q2q1", "label": "🌾 5 galletas salvado Vivo (34g)", "kcal": 140, "p": 3, "c": 24, "f": 3 },
+            { "id": "2a2a1w8e", "label": "🥖 1 mini toscano (50g)", "kcal": 130, "p": 5, "c": 25, "f": 1 },
+            { "id": "1v3r4q1q", "label": "🍞 2 rebanadas pan int castaño (50g)", "kcal": 119, "p": 7, "c": 20, "f": 1 },
+            { "id": "muffin_01", "label": "🧁 Muffin de vainilla estándar", "kcal": 190, "p": 3, "c": 24, "f": 9 },
+
+            { "id": "5e3b5w7c", "label": "🥚 1 huevo duro", "kcal": 78, "p": 7, "c": 1, "f": 5 },
+            { "id": "5i4r6q8e", "label": "🥚🥚 2 huevos duro", "kcal": 156, "p": 14, "c": 2, "f": 10 },
+            { "id": "2o7m9l3e", "label": "🍳🥚 2 huevos omelette (c/aceite)", "kcal": 190, "p": 14, "c": 2, "f": 15 },
+            { "id": "4j5k3q3q", "label": "🧀 30g queso fresco Soprole", "kcal": 41, "p": 4, "c": 1, "f": 2 },
+
+
+            { "id": "f6a3b1e8", "label": "🥛 25g protein Metapure + 250ml agua", "kcal": 106, "p": 25, "c": 1, "f": 0 },
+            { "id": "b5c4d3e2", "label": "🥛 25g protein Prostar + 250ml agua", "kcal": 120, "p": 25, "c": 2, "f": 1 },
+
+            { "id": "7b2c9d1e", "label": "🍎🥣 1 manzana + 1 yogurt veggie", "kcal": 172, "p": 0, "c": 36, "f": 3 },
+            { "id": "c4f8a632", "label": "🍌🥣 1 platano + 1 yogurt veggie", "kcal": 203, "p": 1, "c": 43, "f": 3 },
+
+            { "id": "a1d4e8f0", "label": "🥣 1 yogurt veggie", "kcal": 87, "p": 0, "c": 16, "f": 3 },
+            { "id": "f1c5e7b4", "label": "🥣 1 yogurt protein Loncoleche 150g", "kcal": 113, "p": 18, "c": 8, "f": 1 },
+            { "id": "d2e3f4a5", "label": "🥣 1 yogurt protein Soprole 155g", "kcal": 105, "p": 10, "c": 10, "f": 3 },
+            { "id": "f1c5e7b3", "label": "🥛 200ml leche cultivada protein. Soprole", "kcal": 118, "p": 12, "c": 11, "f": 3 },
+            { "id": "q1q5e2q2", "label": "🥛 200ml leche protein Soprole", "kcal": 112, "p": 12, "c": 10, "f": 3 },
+            { "id": "q1q5e2q2", "label": "🥛 200ml leche cookies & cream", "kcal": 98, "p": 6, "c": 12, "f": 3 },
+
+            { "id": "8c4e2d9f", "label": "🍌 1 platano", "kcal": 116, "p": 1, "c": 27, "f": 0 },
+            { "id": "1f7a3b6c", "label": "🍎 1 manzana", "kcal": 85, "p": 0, "c": 20, "f": 0 },
+            { "id": "f1c5e7b2", "label": "🍐 1 pera", "kcal": 101, "p": 1, "c": 27, "f": 0 },
+            { "id": "a8e2b3c4", "label": "🍊 1 naranja", "kcal": 62, "p": 1, "c": 15, "f": 0 },
+
+            { "id": "5d2e7f9a", "label": "🥜 1/2t Mix Frutos Secos (~45g)", "kcal": 220, "p": 4, "c": 23, "f": 11 },
+            { "id": "2q1w3f1b", "label": "🥜 70g Mix Frutos Secos y Desidratados", "kcal": 340, "p": 7, "c": 36, "f": 21 },
+            { "id": "a7d1e9b4", "label": "🍌🥜 25g mix de frutos secos y deshidratados", "kcal": 123, "p": 3, "c": 12, "f": 7 },
+
+            { "id": "f8c2b3e1", "label": "🥚🌽 3 huevos cocidos con papa y maíz", "kcal": 475, "p": 24, "c": 46, "f": 16 },
+            { "id": "4e9c2a1b", "label": "🌽🥑 1/2t choclo + 1 palta chica + 50g berros + 50g lechuga toscana", "kcal": 260, "p": 5, "c": 24, "f": 16 },
+            { "id": "b2d9c7a4", "label": "🥦🥚🥚 150g brocoli con 2 huevos duros", "kcal": 198, "p": 17, "c": 6, "f": 10 },
+            { "id": "e4c2b9a1", "label": "🫘🧅 240g porotos blancos con cebolla", "kcal": 335, "p": 18, "c": 53, "f": 6 },
+            { "id": "a437a3a8", "label": "🍲 Guiso de lentejas con arroz y papa", "kcal": 380, "p": 16, "c": 64, "f": 4 },
+            { "id": "c597c255", "label": "🥗 Ensalada mixta de berros, lechuga y zanahoria", "kcal": 45, "p": 2, "c": 5, "f": 2 },
+            { "id": "73e0182b", "label": "🥔🥚 Papas cocidas con 4 huevos duros y aceite de oliva", "kcal": 500, "p": 27, "c": 32, "f": 30 },
+            { "id": "garb_02", "label": "🥗 Garbanzos con zanahoria y calabacín", "kcal": 220, "p": 10, "c": 35, "f": 3 },
+            { "id": "b7d3e5f2", "label": "🥗🥚 Ensalada toscana con 2.5 huevos duros y frutos secos", "kcal": 225, "p": 16, "c": 7, "f": 14 },
+            { "id": "a1f4c8d2", "label": "🥗🥚 Ensalada papas cocidas, zanahoria, 3 huevos duros y berros", "kcal": 445, "p": 24, "c": 43, "f": 18 },
+            { "id": "a1q1q3e1", "label": "🥔🥑 Papa cocida con palta y tomate", "kcal": 365, "p": 8, "c": 67, "f": 9 },
+            { "id": "q2a3b0q0", "label": "🥗 Plato completo de garbanzos, huevos, queso fresco y vegetales", "kcal": 655, "p": 42, "c": 64, "f": 23 },
+            { "id": "plato_completo_02", "label": "🥗 Plato de papa cocida (200g), tomate picado (100g) y palta (50g)", "kcal": 273, "p": 5, "c": 44, "f": 8 },
+
+            { "id": "f5a3c8e2", "label": "🫒 5ml aceite de oliva", "kcal": 41, "p": 0, "c": 0, "f": 5 },
+
+            { "id": "a3a1a2z9", "label": "🍪🍪🍪🍪 4 galletas", "kcal": 127, "p": 2, "c": 21, "f": 5 },
+            { "id": "a5b6c7d8", "label": "🍫 1 brownie choco 50g", "kcal": 158, "p": 3, "c": 9, "f": 12 },
+
+            { "id": "b5b4c1d1", "label": "🚲 30-min bici (16-19 k/h) 170kcal", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+            { "id": "v5s6t7d7", "label": "🚲 30-min bici (20-24 k/h) 230kcal", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+            { "id": "c5a6y7d9", "label": "🚲 30-min bici (25-30 k/h) 290kcal", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+
+            { "id": "a4i5i6d1", "label": "💧 200ml agua", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+            { "id": "p5i2p1d2", "label": "💧 400ml agua", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+            { "id": "q4w5g6u1", "label": "💧 200ml bebida caliente", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+            { "id": "b5n2m1j2", "label": "💧 400ml bebida caliente", "kcal": 0, "p": 0, "c": 0, "f": 0 },
+
+        ];
+
+        let trackerDB = JSON.parse(localStorage.getItem('trackerDB')) || { /* tu objeto original 2026-06-03... */ };
+
+
+        // 1. Generar fecha de hoy en formato YYYY-MM-DD
+        const todayObj = new Date();
+        const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+
+        // 2. Intentar leer localStorage
+        let selectedDateStr = localStorage.getItem('selectedDate');
+
+        // 3. BLINDAJE: Si está vacío o corrupto (ej: "NaN-NaN-NaN"), forzar el día de hoy
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!selectedDateStr || !dateRegex.test(selectedDateStr)) {
+	    selectedDateStr = todayStr;
+	    localStorage.setItem('selectedDate', todayStr); // Limpia el almacenamiento corrupto
+	}
+
+	// 4. Crear el objeto Date nativo seguro para móviles
+        let parts = selectedDateStr.split('-');
+        let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
+        let touchStartX = 0;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            setupSwipe();
+            updateAll();
+        });
+
+        // Core Functions
+        function getFmtDate(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        /*function ensureDateExists(dateStr) {
+            if (!trackerDB[dateStr]) {
+                trackerDB[dateStr] = {
+                    "goal": { "kcal": 2500, "p": 130, "c": 330, "f": 70 },
+                    "entries": []
+                };
+            }
+        }*/
+
+	function ensureDateExists(dateStr) {
+	    const activeGoal = { "kcal": 2700, "p": 130, "c": 348, "f": 90 }; // El objetivo que edites
+	    const hoy = getFmtDate(new Date());
+	    
+	    if (!trackerDB[dateStr]) {
+		trackerDB[dateStr] = { "goal": activeGoal, "entries": [] };
+	    } else if (dateStr >= hoy && trackerDB[dateStr].entries.length === 0) {
+		trackerDB[dateStr].goal = activeGoal; // Lo actualiza hoy si no hay registros
+	    }
+	}
+
+        function updateAll() {
+            ensureDateExists(selectedDateStr);
+            renderWeek();
+            renderMacros();
+            renderLogged();
+            renderFoodList();
+            localStorage.setItem('trackerDB', JSON.stringify(trackerDB)); // NUEVA LÍNEA
+            localStorage.setItem('selectedDate', selectedDateStr);
+        }
+
+        // Navigation
+        function renderWeek() {
+            const nav = document.getElementById('week-nav');
+            nav.innerHTML = '';
+            const letters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            
+            let startOfWeek = new Date(baseDate);
+            startOfWeek.setDate(baseDate.getDate() - baseDate.getDay());
+
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                let dStr = getFmtDate(d);
+                
+                let dayDiv = document.createElement('div');
+                dayDiv.className = `day ${dStr === selectedDateStr ? 'active' : ''}`;
+                dayDiv.onclick = () => { selectedDateStr = dStr; updateAll(); };
+                dayDiv.innerHTML = `
+                    <div class="day-l">${letters[i]}</div>
+                    <div class="day-n">${d.getDate()}</div>
+                `;
+                nav.appendChild(dayDiv);
+            }
+        }
+
+        function shiftWeek(offset) {
+            baseDate.setDate(baseDate.getDate() + (offset * 7));
+            updateAll();
+        }
+
+        function setupSwipe() {
+            const container = document.getElementById('nav-container');
+            container.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+            container.addEventListener('touchend', e => {
+                let touchEndX = e.changedTouches[0].screenX;
+                if (touchStartX - touchEndX > 50) shiftWeek(1);
+                if (touchEndX - touchStartX > 50) shiftWeek(-1);
+            });
+        }
+
+        // Macros
+        /*function getColor(pct) {
+            if (pct > 107) return 'var(--c-red)';
+            if (pct >= 95) return 'var(--c-green)';
+            return 'var(--c-orange)';
+        }*/
+        function getColor(pct, type) {
+                switch (type) {
+                    case 'K': // Kcal: Te puedes pasar hasta un 10% máximo (110%) para volumen limpio
+                        if (pct > 110) return 'var(--c-red)';
+                        if (pct >= 95) return 'var(--c-green)';
+                        return 'var(--c-orange)';
+                
+                    case 'P': // Proteínas: Llegar es verde, pasarse hasta un 30% (130%) sigue siendo verde (seguro)
+                        if (pct > 110) return 'var(--c-red)'; // Exceso innecesario que desplaza otros macros
+                        if (pct >= 80) return 'var(--c-green)';
+                        return 'var(--c-orange)';
+                
+                    case 'C': // Carbohidratos: Margen de exceso del 10% máximo (110%) para evitar ganar grasa
+                        if (pct > 110) return 'var(--c-red)';
+                        if (pct >= 90) return 'var(--c-green)';
+                        return 'var(--c-orange)';
+            
+                    case 'G': // Grasas (Palta): Margen extendido del 15% máximo (115%) por ser grasas saludables
+                        if (pct > 110) return 'var(--c-red)';
+                        if (pct >= 90) return 'var(--c-green)';
+                        return 'var(--c-orange)';
+                }
+        }
+
+        function renderMacros() {
+            const panel = document.getElementById('macros-panel');
+            let data = trackerDB[selectedDateStr];
+            
+            let totals = { kcal: 0, p: 0, c: 0, f: 0 };
+            data.entries.forEach(e => {
+                totals.kcal += e.kcal; totals.p += e.p; totals.c += e.c; totals.f += e.f;
+            });
+
+            const renderMacro = (val, goal, label, letter) => {
+                let pct = goal ? (val / goal) * 100 : 0;
+                //let color = getColor(pct);
+                let color = getColor(pct, letter);
+                let w = Math.min(pct, 100);
+                return `
+                    <div class="macro">
+                        <div class="macro-val" style="color: ${color}">${val.toLocaleString('en-US')}<span>/${goal.toLocaleString('en-US')} ${letter}</span></div>
+                        <div class="bar-bg"><div class="bar-fill" style="width: ${w}%; background-color: ${color}"></div></div>
+                    </div>
+                `;
+            };
+
+            panel.innerHTML = `
+                ${renderMacro(totals.kcal, data.goal.kcal, 'Kcal', 'K')}
+                ${renderMacro(totals.p, data.goal.p, 'Proteína', 'P')}
+                ${renderMacro(totals.c, data.goal.c, 'Carbos', 'C')}
+                ${renderMacro(totals.f, data.goal.f, 'Grasas', 'G')}
+            `;
+        }
+
+        // Drag & Drop Handlers
+        let dragSrcEl = null;
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.id);
+            setTimeout(() => this.classList.add('dragging'), 0);
+        }
+        function handleDragOver(e) { e.preventDefault(); return false; }
+        function handleDragEnter(e) { e.preventDefault(); }
+        function handleDragEnd(e) { this.classList.remove('dragging'); }
+        function handleDrop(e) {
+            e.stopPropagation();
+            let target = e.target.closest('.item-card');
+            if (dragSrcEl !== target && target) {
+                let srcId = dragSrcEl.dataset.id;
+                let tgtId = target.dataset.id;
+                let entries = trackerDB[selectedDateStr].entries;
+                
+                let srcIdx = entries.findIndex(x => x.id === srcId);
+                let tgtIdx = entries.findIndex(x => x.id === tgtId);
+                
+                let [moved] = entries.splice(srcIdx, 1);
+                entries.splice(tgtIdx, 0, moved);
+                
+                entries.forEach((ent, i) => ent.order = i + 1);
+                updateAll();
+            }
+            return false;
+        }
+
+        // Logged Foods
+        function renderLogged() {
+            const list = document.getElementById('logged-list');
+            list.innerHTML = '';
+            let entries = trackerDB[selectedDateStr].entries.sort((a,b) => a.order - b.order);
+
+            entries.forEach(e => {
+                let card = document.createElement('div');
+                card.className = 'item-card';
+                card.draggable = true;
+                card.dataset.id = e.id;
+                
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragover', handleDragOver);
+                card.addEventListener('dragenter', handleDragEnter);
+                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('drop', handleDrop);
+
+card.innerHTML = `
+    <div class="drag-handle">≡</div>
+    <div class="item-info">
+        <p class="item-name" style="display:flex; justify-content:space-between; align-items:center; margin:0;">
+          <span>${e.label}</span> 
+          <span class="item-macros" style="margin-left:10px; white-space:nowrap;">${e.kcal}K | ${e.p}P | ${e.c}C | ${e.f}G</span>
+        </p>
+    </div>
+    <button class="delete-btn" onclick="removeEntry('${e.id}')">✕</button>
+`;
+                list.appendChild(card);
+            });
+        }
+
+        // Food DB List
+        function renderFoodList() {
+            const list = document.getElementById('food-list');
+            list.innerHTML = '';
+            let entries = trackerDB[selectedDateStr].entries;
+
+            foodDB.forEach(food => {
+                let count = entries.filter(e => e.id_food === food.id).length;
+                let card = document.createElement('div');
+                card.className = 'item-card';
+
+card.innerHTML = `
+    <div class="item-info">
+        <p class="item-name" style="display:flex; justify-content:space-between; align-items:center; margin:0;">
+            <span>${food.label}</span>
+            <span class="item-macros" style="margin-left:10px; margin-right: 15px; white-space:nowrap;">${food.kcal}K | ${food.p}P | ${food.c}C | ${food.f}G</span>
+        </p>
+    </div>
+    <div class="food-controls">
+        <button class="ctrl-btn" onclick="addRemoveFood('${food.id}', -1)">-</button>
+        <div class="ctrl-val">${count}</div>
+        <button class="ctrl-btn" onclick="addRemoveFood('${food.id}', 1)">+</button>
+    </div>
+`;
+                list.appendChild(card);
+            });
+        }
+
+        // Actions
+        function removeEntry(id) {
+            let entries = trackerDB[selectedDateStr].entries;
+            trackerDB[selectedDateStr].entries = entries.filter(e => e.id !== id);
+            trackerDB[selectedDateStr].entries.forEach((ent, i) => ent.order = i + 1);
+            updateAll();
+        }
+
+        function addRemoveFood(foodId, action) {
+            let entries = trackerDB[selectedDateStr].entries;
+            if (action === 1) {
+                let food = foodDB.find(f => f.id === foodId);
+                entries.push({
+                    id: Math.random().toString(16).slice(2, 10),
+                    id_food: food.id,
+                    order: entries.length + 1,
+                    label: food.label,
+                    kcal: food.kcal, p: food.p, c: food.c, f: food.f
+                });
+            } else {
+                let idx = entries.map(e => e.id_food).lastIndexOf(foodId);
+                if (idx !== -1) entries.splice(idx, 1);
+                entries.forEach((ent, i) => ent.order = i + 1);
+            }
+            updateAll();
+        }
+    </script>
+</body>
+</html>
