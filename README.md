@@ -7,6 +7,7 @@ Frontend: S3 + CloudFront
 Backend: AWS Lambda
 DB: DynamoDB
 
+
 El siguiente diagrama muestra el flujo de datos e interacciones entre el usuario, la capa de Frontend estática, el Backend serverless y la Base de Datos en AWS:
 
 ```mermaid
