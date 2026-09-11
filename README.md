@@ -7,37 +7,38 @@ Frontend: S3 + CloudFront
 Backend: AWS Lambda
 DB: DynamoDB
 
+## 📐 Arquitectura del Sistema (Diagrama de Contexto)
 
 El siguiente diagrama muestra el flujo de datos e interacciones entre el usuario, la capa de Frontend estática, el Backend serverless y la Base de Datos en AWS:
 
 ```mermaid
-graph LR
+flowchart LR
     %% Definición de Nodos
-    Browser["🌐 Navegador Web<br>(Smartphone / Laptop)"]
+    Browser["🌐 Navegador Web (Smartphone / Laptop)"]
     
-    subgraph AWS ["☁️ Amazon Web Services (AWS)"]
-        subgraph Frontend ["Capa Frontend (Costo $0)"]
-            CF["📦 Amazon CloudFront<br>(CDN / URL Privada)"]
-            S3["🪣 Amazon S3<br>(HTML / JS Estático)"]
+    subgraph AWS ["☁️ Amazon Web Services"]
+        subgraph Frontend ["Capa Frontend (Costo \$0)"]
+            CF["📦 Amazon CloudFront (CDN / URL Privada)"]
+            S3["🪣 Amazon S3 (HTML / JS Estático)"]
         end
         
         subgraph Backend ["Capa Backend (Serverless)"]
-            Lambda["⚡ AWS Lambda<br>(Lógica Node.js / Python)"]
+            Lambda["⚡ AWS Lambda (Lógica Node.js / Python)"]
         end
         
         subgraph Database ["Capa de Datos"]
-            Dynamo["🗄️ Amazon DynamoDB<br>(Tabla NoSQL por PIN)"]
+            Dynamo["🗄️ Amazon DynamoDB (Tabla por PIN)"]
         end
     end
 
     %% Flujos e Interacciones
-    Browser -->|1. Solicita App (URL Privada)| CF
+    Browser -->|1. Solicita App| CF
     CF -->|2. Sirve Archivos| S3
-    S3 -->|3. Retorna HTML/JS| Browser
+    S3 -->|3. Retorna HTML y JS| Browser
     
-    Browser -.->|LocalStorage: Lee/Guarda PIN| Browser
+    Browser -.->|LocalStorage: Lee o Guarda PIN| Browser
     
-    Browser -->|4. Envía PIN (API Fetch)| Lambda
+    Browser -->|4. Envía PIN vía Fetch API| Lambda
     Lambda -->|5. Consulta Historial| Dynamo
     Dynamo -->|6. Retorna Datos Históricos| Lambda
     Lambda -->|7. Responde JSON con Historial| Browser
@@ -49,4 +50,3 @@ graph LR
     style Backend fill:#ffe6cc,stroke:#cc6600,stroke-width:1px
     style Database fill:#e6ffe6,stroke:#006600,stroke-width:1px
 ```
-
