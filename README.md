@@ -1,6 +1,6 @@
 # Tracker
 
-A simple Single Page Application (SPA) for tracking food intake through a lightweight serverless architecture on AWS.
+A simple, lightweight single-page application (SPA) for track meals, based on a serverless architecture on AWS.
 
 ## 📋 Overview
 
@@ -12,63 +12,45 @@ The project focuses on keeping the architecture simple, scalable, and maintainab
 
 The system architecture is documented using the **C4 Model**, progressively describing the system from its high-level context to its internal components.
 
-### C4 Model
+### C4 Context Diagram
 
-#### Level 1 — System Context
-
-The System Context diagram shows Tracker as a system and its relationship with the primary user.
+The Context Diagram shows Tracker as a system and its relationship with the user.
 
 ```mermaid
 C4Context
-    title System Context Diagram — Tracker
-
-    Person(user, "User", "Uses Tracker through a web browser")
-
-    System(tracker, "Tracker", "Allows users to track their food intake")
-
-    Rel(user, tracker, "Uses", "HTTPS")
+    title C4 Context Diagram - Tracker
+    Person(user, "User", "Accesses the application from any browser")
+    Boundary(aws, "AWS us-east-1") {
+        System(app, "Tracker", "Allows user interact with the system over the internet")
+    }
+    Rel(user, app, "Uses", "HTTPS")
 ```
 
-#### Level 2 — Container
+### C4 Container Diagram
 
 The Container diagram shows the main building blocks of the Tracker system and how they communicate.
 
 ```mermaid
 C4Container
-    title Container Diagram — Tracker
-
-    Person(user, "User", "Uses Tracker through a web browser")
-
-    System_Boundary(tracker, "Tracker") {
-
-        Container(frontend, "Web Frontend", "SPA / Amazon S3 + CloudFront", "Delivers the web application to the user")
-
-        Container(api, "API", "Amazon API Gateway", "Exposes the application's HTTP API")
-
-        Container(backend, "Backend", "AWS Lambda", "Executes application and business logic")
-
-        ContainerDb(database, "Database", "Amazon DynamoDB", "Stores application data")
+    title C4 Container Diagram - Tracker
+    Person(user, "User", "Accesses the application from any web browser")
+    Boundary(aws, "AWS us-east-1") {
+        System_Boundary(system, "Application") {
+            Container(frontend, "Frontend", "Amazon S3 + CloudFront", "Serves the SPA/static content")
+            Container(backend, "Backend", "AWS Lambda", "Exposes the business logic via API")
+            ContainerDb(db, "Database", "Amazon DynamoDB", "Stores application data")
+        }
     }
-
     Rel(user, frontend, "Uses", "HTTPS")
-    Rel(frontend, api, "Calls", "HTTPS / REST")
-    Rel(api, backend, "Invokes", "AWS Lambda integration")
-    Rel(backend, database, "Reads and writes", "AWS SDK")
-
+    Rel(frontend, backend, "Calls", "REST (API Gateway)")
+    Rel(backend, db, "Reads/Writes", "AWS SDK")
     UpdateElementStyle(frontend, $bgColor="darkorange", $borderColor="chocolate", $fontColor="white")
-    UpdateElementStyle(api, $bgColor="darkorange", $borderColor="chocolate", $fontColor="white")
     UpdateElementStyle(backend, $bgColor="darkorange", $borderColor="chocolate", $fontColor="white")
 ```
 
-### Planned C4 Levels
+### C4 Component Diagram
 
-The architecture will be documented incrementally:
-
-* **Level 1 — System Context:** system boundaries and external actors.
-* **Level 2 — Container:** major application building blocks and their interactions.
-* **Level 3 — Component:** internal structure of containers where additional decomposition provides architectural value.
-
-Not every container requires a Level 3 diagram. Component diagrams will be added only where the internal structure is sufficiently complex to justify further decomposition.
+Shows internal structure of containers where additional decomposition provides architectural value:
 
 ## 🧰 Technology Stack
 
@@ -123,10 +105,10 @@ The application is designed to be deployed using AWS managed services.
 
 The deployment architecture separates:
 
-* Static frontend delivery.
-* API exposure.
-* Application execution.
-* Data persistence.
+* Static frontend delivery with .
+* API exposure with .
+* Application execution with .
+* Data persistence with .
 
 Deployment automation and infrastructure-as-code will be added as the project evolves.
 
