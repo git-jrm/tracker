@@ -7,7 +7,7 @@ The follow diagrams show how the upper architectures on AWS for this microapp:
 
 ```mermaid
 C4Context
-    title Context Diagram (C4-L1) - Tracker
+    title C4 Context Diagram - Tracker
 
     Person(user, "User", "Accesses the application from any web browser")
 
@@ -19,7 +19,7 @@ C4Context
 
 ```mermaid
 C4Container
-    title Container Diagram (C4-L2) - Tracker
+    title C4 Container Diagram - Tracker
 
     Person(user, "User", "Accesses the application from any web browser")
 
