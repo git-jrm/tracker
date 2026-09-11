@@ -9,15 +9,15 @@ Tracker is a lightweight serverless SPA designed to practice software engineerin
 - **FR-01:** Track and add meals with a single click.
 ### Non-Functional Requirements
 - **NFR-01 — Scalability:** The system should scale as the number of users and stored data increases.
-- **NFR-02 — Maintainability:** Components should remain independent and easy to modify.
-- **NFR-03 — Security:** Data and system access should be protected according to least-privilege principles.
+- **NFR-02 — Maintainability:** Codebase and architecture should remain easy to understand and evolve. And keep components independent.
+- **NFR-03 — Security by design:** Ensure principle of least privilege and minimize unnecessary infrastructure exposure.
 
 ## II.Design
 ### 🧩 Considerations
 * **Simplicity** : avoid unnecessary infrastructure and operational complexity.
 * **Separation of concerns** : keep presentation, API, business logic, and persistence responsibilities separated.
 * **SOLID Principles** : Five core design principles to write clean, maintainable, and scalable software:
-* ** S - Single Responsibility:** A class should do **only one thing**.
+* ** S - Single Responsibility:** A module should do **only one thing**.
 * ** O - Open/Closed:** Code should be **open for extension, closed for modification**.
 * ** L - Liskov Substitution:** Subclasses must be **fully interchangeable** with their parent classes.
 * ** I - Interface Segregation:** Create **small, specific interfaces** rather than one bulky general-purpose one.
@@ -39,9 +39,10 @@ The project focuses on keeping the architecture simple, scalable, and maintainab
 * **Serverless-first architecture** — use managed AWS services where appropriate.
 * **Scalability** — rely on managed services capable of scaling independently.
 * **Maintainability** — keep the codebase and architecture easy to understand and evolve.
-* **Security by design** — minimize unnecessary infrastructure exposure and access privileges.
-The project is intentionally designed around the SOLID principles:
+* **** — .
+
 The system architecture is documented using the **C4 Model**, progressively describing the system from its high-level context to its internal components:
+
 ### C1 Context Diagram
 The Context Diagram shows Tracker as a system and its relationship with the user.
 ```mermaid
@@ -58,7 +59,7 @@ C4Context
 The Container diagram shows the main building blocks of the Tracker system and how they communicate.
 ```mermaid
 C4Container
-    title C4 Container Diagram
+    title C2 Container Diagram
     Person(user, "User", "Accesses the application from any web browser")
     Boundary(aws, "AWS Cloud") {
         System_Boundary(system, "Application") {
@@ -78,7 +79,7 @@ C4Container
 Shows internal structure of containers where additional decomposition provides architectural value.
 ```mermaid
 C4Component
-    title C4 Component Diagram
+    title C3 Component Diagram - Backend
     Person(user, "User", "Accesses the application from any web browser")
     Boundary(aws, "AWS Cloud") {
         System_Boundary(system, "Application") {
