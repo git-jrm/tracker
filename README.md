@@ -31,7 +31,6 @@ The project aims to follow principles such as:
 * HTTPS for client-to-API communication.
 * Separation between application layers.
 * Controlled access to persistent data.
-* Environment-specific configuration.
 
 ## 🏗️ Architecture
 The project focuses on keeping the architecture simple, scalable, and maintainable while following industry-recommended software architecture and SOLID principles.
@@ -121,7 +120,7 @@ The deployment architecture separates:
 Deployment automation and infrastructure-as-code will be added as the project evolves.
 
 ## 🧪 Testing
-Testing will be introduced progressively as the application evolves.
+Automated testing in CI/CD will be introduced progressively as the application evolves.
 
 ## 🗺️ Roadmap
 * [x] Define mvp
@@ -138,8 +137,9 @@ Testing will be introduced progressively as the application evolves.
 ## 📌 Project Status
 This project is being developed incrementally to practic software engineering and cloud architecture practices.
 
-## 📄 License
-This project is licensed under the terms of the license included in this repository.
+## 📄 License & Warranty
+This project is licensed under the **PolyForm Noncommercial License 1.0.0**. You are free to use, modify, and share this software strictly for **non-commercial purposes** (such as personal use, education, or research). Any commercial exploitation, direct or indirect, is strictly prohibited without a prior written commercial agreement from the author.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. For the full legal terms, please refer to the [LICENSE](LICENSE.md) file.
 
 
 
