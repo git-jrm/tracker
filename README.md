@@ -103,6 +103,8 @@ The project aims to follow principles such as:
 
 ## 🚀 Deployment
 Deployment automation and infrastructure-as-code will be added as the project evolves.
+### ACCESS KEY Setup
+*AWS IAM>user>Security credentials>
 
 ## 🧪 Testing
 Automated testing in CI/CD will be introduced progressively as the application evolves.
