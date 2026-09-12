@@ -32,10 +32,8 @@ The Context Diagram shows Tracker as a system and its relationship with the user
 ```mermaid
 C4Context
     title C1 Context Diagram
-    Person(user, "User", "Accesses the application from any browser")
-    Boundary(aws, "AWS") {
-        System(app, "Tracker", "Allows user interact with the system over the internet")
-    }
+    Person(user, "User", "Accesses the application from any web browser")
+    System(app, "Tracker", "Allows users to track meals and achieve nutrition goals")
     Rel(user, app, "Uses", "HTTPS")
 ```
 
@@ -45,17 +43,23 @@ The Container diagram shows the main building blocks of the Tracker system and h
 C4Container
     title C2 Container Diagram
     Person(user, "User", "Accesses the application from any web browser")
+
     Boundary(aws, "AWS") {
-        System_Boundary(system, "Application") {
+        System_Boundary(system, "Tracker") {
             Container(frontend, "Frontend", "Amazon S3 + CloudFront", "Serves the SPA/static content")
-            Container(backend, "Backend", "AWS Lambda", "Exposes the business logic via API")
+            Container(api, "API", "Amazon API Gateway", "Exposes the application's HTTP API")
+            Container(backend, "Backend", "AWS Lambda", "Executes the application business logic")
             ContainerDb(db, "Database", "Amazon DynamoDB", "Stores application data")
         }
     }
+
     Rel(user, frontend, "Uses", "HTTPS")
-    Rel(frontend, backend, "Calls", "REST (API Gateway)")
+    Rel(frontend, api, "Calls", "HTTPS")
+    Rel(api, backend, "Invokes", "Lambda integration")
     Rel(backend, db, "Reads/Writes", "AWS SDK")
+
     UpdateElementStyle(frontend, $bgColor="darkorange", $borderColor="chocolate", $fontColor="white")
+    UpdateElementStyle(api, $bgColor="darkorange", $borderColor="chocolate", $fontColor="white")
     UpdateElementStyle(backend, $bgColor="darkorange", $borderColor="chocolate", $fontColor="white")
 ```
 
@@ -101,7 +105,6 @@ The project aims to follow principles such as:
 
 ## 🚀 Deployment
 Deployment automation and infrastructure-as-code will be added as the project evolves.
-Deployment automation and infrastructure-as-code will be added
 
 ## 🧪 Testing
 Automated testing in CI/CD will be introduced progressively as the application evolves.
@@ -110,7 +113,7 @@ Automated testing in CI/CD will be introduced progressively as the application e
 * [x] Define MVP
 * [x] Define architecture
 * [x] Create MVP
-* [ ] Define IaC (infrastructure as code)
+* [ ] Gradually define IaC (Infrastructure as Code)
 * [ ] Implement CI/CD pipeline
 * [ ] Add automated tests
 * [ ] Implement access control, social login, OAuth 2.0/OIDC with Amazon Cognito
