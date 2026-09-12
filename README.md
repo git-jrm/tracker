@@ -68,20 +68,18 @@ Shows internal structure of containers where additional decomposition provides a
 ```mermaid
 C4Component
     title C3 Component Diagram: Backend
-    Person(user, "User", "Accesses the app from browser")
-    Boundary(aws, "AWS") {
-        System_Boundary(system, "App") {
-            Container(frontend, "Frontend", "Amazon S3 + CloudFront", "Serves the SPA/static content")
-            System_Boundary(Backend_Boundary, "Backend") {
-                Container(backend1, "API Gateway", "API Gateway", "Gateway")
-                Container(backend2, "AWS Lambda", "AWS Lambda", "Lambda")
-            }
-            ContainerDb(db, "Database", "Amazon DynamoDB", "Stores application data")
-        }
+
+    Container_Boundary(backend, "Backend — AWS Lambda") {
+        Component(handler, "Lambda Handler", "AWS Lambda", "Receives API requests and coordinates application execution")
+        Component(logic, "Business Logic", "Application code", "Validates and processes meal-related operations")
+        Component(data, "Data Access", "Application code", "Reads and writes application data")
     }
-    Rel()
-    Rel()
-    Rel()
+
+    ContainerDb(db, "Database", "Amazon DynamoDB", "Stores application data")
+
+    Rel(handler, logic, "Calls")
+    Rel(logic, data, "Uses")
+    Rel(data, db, "Reads/Writes", "AWS SDK")
 ```
 
 ## 🧰 Tech Stack
