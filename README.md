@@ -102,9 +102,38 @@ The project aims to follow principles such as:
 * Separation between application layers.
 
 ## 🚀 Deployment
-Deployment automation and infrastructure-as-code will be added as the project evolves.
-### ACCESS KEY Setup
-*AWS IAM>user>Security credentials>
+Deployment automation by CI/CD and infrastructure-as-code it's been added.
+### GitHub Actions:
+***deploy.yml***
+```
+name: Deploy to S3 by ACCESS KEY
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Code checkout
+      uses: actions/checkout@v4
+
+    - name: Config AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1 # Cambia esto por la región de tu bucket (ej. us-west-2)
+
+    - name: Sync S3 files
+      run: |
+        aws s3 sync . s3://bucket-aws-pruebas --delete
+```
+### AWS ACCESS KEY
+*IAM user>Security credentials>Create access key.
 
 ## 🧪 Testing
 Automated testing in CI/CD will be introduced progressively as the application evolves.
@@ -113,9 +142,10 @@ Automated testing in CI/CD will be introduced progressively as the application e
 * [x] Define MVP
 * [x] Define architecture
 * [x] Create MVP
-* [ ] Gradually define IaC (Infrastructure as Code)
 * [ ] Implement CI/CD pipeline
+* [ ] Gradually define IaC (Infrastructure as Code)
 * [ ] Add automated tests
+* [ ] Implement CI/CD pipeline by OIDC
 * [ ] Implement access control, social login, OAuth 2.0/OIDC with Amazon Cognito
 * [ ] Improve observability and monitoring
 
