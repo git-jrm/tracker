@@ -23,6 +23,18 @@ Tracker is a lightweight serverless SPA designed to practice software engineerin
     * **I-Interface Segregation:** Create **small, specific interfaces** rather than one bulky general-purpose one.
     * **D-Dependency Inversion:** Depend on **abstractions (interfaces)**, never on concrete implementations.
 
+### Interface Design
+Header:
+*-->* Full week (week's days + month's days).
+*-->* Calories + macros.
+Body:
+*-->* Eaten list.
+*-->* Meals list.
+
+### Single-Table Design
+
+
+
 ## 🏗️ III. Architecture
 The architecture focuses on simplicity, scalability, maintainability and clear separation of responsibilities.
 The architecture favors AWS-managed services to reduce operational overhead.
@@ -43,7 +55,6 @@ The Container diagram shows the main building blocks of the Tracker system and h
 C4Container
     title C2 Container Diagram
     Person(user, "User", "Accesses the application from any web browser")
-
     Boundary(aws, "AWS") {
         System_Boundary(system, "Tracker") {
             Container(frontend, "Frontend", "Amazon S3 + CloudFront", "Serves the SPA/static content")
@@ -68,7 +79,7 @@ Shows internal structure of containers where additional decomposition provides a
 ```mermaid
 C4Component
     title C3 Component Diagram: Backend
-
+    Person(user, "User", "Accesses the application from any web browser")
     Container_Boundary(backend, "Backend — AWS Lambda") {
         Component(handler, "Lambda Handler", "AWS Lambda", "Receives API requests and coordinates application execution")
         Component(logic, "Business Logic", "Application code", "Validates and processes meal-related operations")
@@ -104,6 +115,7 @@ The project aims to follow principles such as:
 ## 🚀 Deployment
 Deployment automation by CI/CD and infrastructure-as-code it's been added.
 ### ACCESS KEY Config
+*AWS: S3>Create bucket.
 *AWS: IAM user>Security credentials>Create access key.
 *Repo: settings>Actions secrets and variables>Actions>New repository secrets: Add 2 secrets: access key & secret key.
 
@@ -142,9 +154,14 @@ Automated testing in CI/CD will be introduced progressively as the application e
 
 ## 🗺️ Roadmap
 * [x] Define MVP
-* [x] Define architecture
-* [x] Create MVP
-* [ ] Implement CI/CD pipeline
+* [x] Create monolithic architecture prototype
+* [x] Implement CI/CD pipeline (Git+Action+Credentials)
+* [ ] Define the DynamoDB table
+* [ ] Implement Amazon DynamoDB
+* [ ] Implement AWS Lambda
+* [ ] Implement Amazon API Gateway
+* [ ] Implement PIN-code access page
+* [ ] Launch MVP (Send VIP PIN-code)
 * [ ] Gradually define IaC (Infrastructure as Code)
 * [ ] Add automated tests
 * [ ] Implement CI/CD pipeline by OIDC
