@@ -1,28 +1,25 @@
-name: Despliegue a Amazon S3
+name: Deploy to S3 by ACCESS KEY
 
 on:
   push:
     branches:
-      - main # Cambia esto si tu rama principal se llama master o de otra forma
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Descarga el código del repositorio en el servidor de GitHub
-    - name: Checkout del código
+    - name: Code checkout
       uses: actions/checkout@v4
 
-    # 2. Configura la conexión con AWS usando tus credenciales guardadas
-    - name: Configurar credenciales de AWS
+    - name: Config AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1 # Cambia esto por la región de tu bucket (ej. us-west-2)
 
-    # 3. Sincroniza tu carpeta con el bucket de S3
-    - name: Sincronizar archivos a S3
+    - name: Sync S3 files
       run: |
         aws s3 sync . s3://bucket-aws-pruebas --delete
