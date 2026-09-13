@@ -103,6 +103,11 @@ The project aims to follow principles such as:
 
 ## 🚀 Deployment
 Deployment automation by CI/CD and infrastructure-as-code it's been added.
+### Create AWS ACCESS KEY
+*AWS IAM user>Security credentials>Create access key.
+### Config AWS ACCESS KEY
+*Repo settings>Actions secrets and variables>Actions>New repository secrets: Add 2 secrets: access key & secret key.
+
 ### GitHub Actions:
 ***deploy.yml***
 ```
@@ -132,8 +137,6 @@ jobs:
       run: |
         aws s3 sync . s3://bucket-aws-pruebas --delete
 ```
-### AWS ACCESS KEY
-*IAM user>Security credentials>Create access key.
 
 ## 🧪 Testing
 Automated testing in CI/CD will be introduced progressively as the application evolves.
