@@ -103,12 +103,11 @@ The project aims to follow principles such as:
 
 ## 🚀 Deployment
 Deployment automation by CI/CD and infrastructure-as-code it's been added.
-### Create AWS ACCESS KEY
-*AWS IAM user>Security credentials>Create access key.
-### Config AWS ACCESS KEY
-*Repo settings>Actions secrets and variables>Actions>New repository secrets: Add 2 secrets: access key & secret key.
+### ACCESS KEY Config
+*AWS: IAM user>Security credentials>Create access key.
+*Repo: settings>Actions secrets and variables>Actions>New repository secrets: Add 2 secrets: access key & secret key.
 
-### GitHub Actions:
+### GitHub Actions Config:
 ***deploy.yml***
 ```
 name: Deploy to S3 by ACCESS KEY
