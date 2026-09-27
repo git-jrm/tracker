@@ -497,23 +497,25 @@ test('createLog invalid date format', () => {
 ```
 
 ## 🗺️ VII. Roadmap
+
+### Milestone 1: Define MVP
 * [x] Define MVP
+* [x] Define API contact
+* [x] Define DynamoDB table
+
+### Milestone 2: Functional MVP
+* [x] Create prototype architecture
 * [x] Implement Frontend
-* [x] Create monolithic architecture prototype
 * [x] Implement CI/CD pipeline (Git+Action+Credentials)
-* [x] Define the DynamoDB table
-* [ ] Implement Amazon DynamoDB
+
+### Milestone 3: Deployment config
+* [ ] Implement Amazon DynamoDB table
 * [ ] Implement Backend AWS Lambda
 * [ ] Implement Amazon API Gateway
-* [ ] Implement JWT
-* [ ] Add OpenAPI specification (openapi.yaml)
-* [ ] Implement Login Email with "IT WASN'T ME" button to kill JWT & generates new User PIN
-* [ ] Implement PIN-code access page
-* [ ] Launch MVP (Send VIP PIN-code)
-* [ ] Gradually define IaC (Infrastructure as Code)
-* [ ] Add automated tests
-* [ ] Implement CI/CD pipeline by OIDC
-* [ ] Implement access control, social login, OAuth 2.0/OIDC with Amazon Cognito
+
+### Milestone 4: Scalability
+- [ ] Automated Tests 
+- [ ] CI/CD by OIDC (without access keys)
 * [ ] Improve observability and monitoring
 
 ## 📄 VIII. License
