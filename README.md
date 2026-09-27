@@ -100,34 +100,38 @@ function verifyToken(token) {
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant API as API Gateway
+    participant API as API Gateway (CORS)
     participant L as Lambda (Auth)
     participant DB as DynamoDB
 
-    U->>API: POST /auth (User KEY)
+    U->>API: POST /auth (user, password)
     API->>L: Invoke
-    L->>DB: Get U1#PIN_HASH
-    DB-->>L: pin_hash
-    alt PIN valid
-        L->>L: Compare bcrypt(input) vs pin_hash
-        L->>L: Generate JWT (id_user claim, TD03)
-        L-->>API: 200 OK + JWT
-        API-->>U: 200 OK + JWT
-    else PIN invalid
-        L->>DB: Increment failed attempts
-        L-->>API: 401 Unauthorized
-        API-->>U: 401 Unauthorized
+    L->>DB: Get U1#CREDENTIALS + failed_attempts
+    DB-->>L: password_hash, failed_attempts
+    alt failed_attempts >= N
+        L-->>API: 429 Too Many Requests
+        API-->>U: 429 Too Many Requests (Retry-After header)
+    else under limit
+        alt password valid
+            L->>L: bcrypt.compare()
+            L->>DB: reset failed_attempts
+            L->>L: Generate JWT (1h, HS256, id_user claim)
+            L-->>API: 200 OK + JWT
+            API-->>U: 200 OK + JWT
+        else invalid
+            L->>DB: increment failed_attempts
+            L-->>API: 401 Unauthorized
+            API-->>U: 401 Unauthorized
+        end
     end
-
-    Note over U,API: Subsequent requests
-
-    U->>API: Any request + JWT (Authorization header)
-    API->>API: JWT Authorizer validates token
-    alt JWT valid
-        API->>L: Invoke backend Lambda (id_user from claim)
+    Note over U,API: CORS: Access-Control-Allow-Origin restricted to frontend domain (not *)
+    U->>API: Any request + JWT
+    API->>API: JWT Authorizer (native, signature+exp only)
+    alt valid
+        API->>L: Invoke backend
         L-->>API: Response
         API-->>U: Response
-    else JWT invalid/expired
+    else invalid/expired
         API-->>U: 401 Unauthorized
     end
 ```
