@@ -2,7 +2,7 @@
 A simple one click web app for tracking meals to achieve nutrition goals.
 
 ## 📋 Executive Summary
-Tracker is a lightweight serverless SPA designed according to software development lifecycle (SDLC) practices, applying fundamental software engineering principles and design patterns. On well architected AWS cloud managed services.
+Tracker is a simple app designed according to software development lifecycle (SDLC) practices, applying fundamental software engineering principles and design patterns. On well architected AWS cloud managed services.
 
 ## 📌 Status
 This project is being developed incrementally to practice software engineering and cloud architecture principles.
