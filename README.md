@@ -5,9 +5,7 @@ A simple app for tracking meals to achieve yours goals in 1-click.
 Tracker is built on a simple premise: less is more. Keep deliberately minimal design and remove friction make user's data private by defaul and logging a meal in 1-click.
 
 ## 📌 Status
-This project is being developed incrementally with practice software engineering and cloud architecture principles.
-
-Tracker is a simple SPA designed according to software development lifecycle (SDLC) practices, applying fundamental software engineering principles and design patterns. On well architected AWS cloud managed services.
+Actively built as an incremental project, applying SDLC practices, cloud architecture principles and AWS Well-Architected patterns.
 
 ## 📋 I. Requirements
 ### ⚙️ Functional Requirements
