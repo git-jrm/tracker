@@ -286,8 +286,8 @@ Return Types:
 | `DeletedMeal` | `{ "id_meal": string, "DeletedAt": string }` |
 | `DeletedLog` | `{ "date": string, "id_log": string, "order": string, "DeletedAt": string }` |
 
-### 🗃️ Data Modeling (Amazon DynamoDB)
-Amazon DynamoDB Table for Reference **(Implemented by IaC)**
+### 🗃️ Data Modeling: Amazon DynamoDB
+Reference: Amazon DynamoDB Table **(Implemented by IaC)**
 ```
 aws dynamodb create-table \                   # create table
     --table-name Tracker \
