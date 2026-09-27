@@ -285,7 +285,7 @@ Example Table Data:
 | Mapping | PK | SK | DeletedAt | Data
 | --- | --- | --- | --- | --- |
 | User: | U1#METADATA | 20260719 | null | {metadadata}
-| User: | U1#PIN_HASH | 20260719 | null | {pin_hash}
+| User: | U1#CREDENTIALS | 20260719 | null | {user,password_hash}
 | Meal: | U1#MEAL | 20260719#a1a1a1 | null | {meal}
 | Meal: | U1#MEAL | 20260719#a2a2a2 | 20260719#131313 | {meal}
 | Meal: | U1#MEAL | 20260719#a3a3a3 | null | {meal}
@@ -433,7 +433,7 @@ The frontend static site deployment is automated with **CI/CD** using **GitHub A
 * AWS: IAM user>Security credentials>Create access key.
 * Repo: settings>Actions secrets and variables>Actions>New repository secrets: Add 2 secrets: access key & secret key.
 
-### 🔁 CI/CD Pipeline (GitHub Actions)
+### 🔁 CI/CD Pipeline: GitHub Actions
 ***deploy.yml***
 ```
 name: GitHub Actions Deploy to S3 by ACCESS KEY
@@ -463,8 +463,25 @@ jobs:
         aws s3 sync . s3://bucket-aws-pruebas --delete
 ```
 
-### 🧪 Automated Testing
-_`< Automated testing in CI/CD will be introduced progressively as the application evolves >`_
+### 🗺️ IaC: AWS CloudFormation
+***dynamodb-template.yml***
+```
+Resources:
+  TrackerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+```
 
 ## 🗺️ VII. Roadmap
 * [x] Define MVP
