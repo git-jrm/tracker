@@ -483,6 +483,19 @@ Resources:
           KeyType: RANGE
 ```
 
+### 🧪 Automated Test
+```
+// mealService.test.js
+const { MealService } = require('../mealService');
+
+test('createLog invalid date format', () => {
+  const testRepo = { save: jest.fn() };
+  const service = new MealService(testRepo);
+  expect(() => service.createLog('U1', '2026-07-19', {}))
+    .toThrow('Invalid date format, expected YYYYMMDD');
+});
+```
+
 ## 🗺️ VII. Roadmap
 * [x] Define MVP
 * [x] Implement Frontend
