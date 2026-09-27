@@ -9,44 +9,38 @@ Actively built as an incremental project, applying SDLC practices, cloud archite
 
 ## 📋 I. Requirements
 ### ⚙️ Functional Requirements
-- **FR01:** Log meals with a single click in "+" button.
-- **FR02:** Display a week navigator.
-- **FR03:** Display kcal and macros for the selected date.
-- **FR04:** Display **available meals** and **logged meals**.
-- **FR05:** Add button for: Soft delete Available meals.
-- **FR06:** Add button for: Soft delete Logged meals.
+- **FR-01:** Log meals with a single click in "+" button.
+- **FR-02:** Display a week navigator.
+- **FR-03:** Display kcal and macros for the selected date.
+- **FR-04:** Display **available meals** and **logged meals**.
+- **FR-05:** Add button for: Soft delete Available meals.
+- **FR-06:** Add button for: Soft delete Logged meals.
 ### 🏛️ Non-Functional Requirements (architectural characteristics)
 | NFR | Measurable Goal |
 |---|---|
-| NFR01 Security | 0 credentials in code; JWT lifespan ≤ 1h; automatic secret rotation every 30 days using AWS Secrets Manager; 100% clases Principle of least privilege |
-| NFR02 Maintainability | Test coverage > 80% in business logic layer; cyclomatic complexity < 10 per function |
-| NFR03 Availability | 99.5% monthly (allowing for Lambda cold starts) |
-| NFR04 Scalability | Support 100 concurrent users with < 500ms p95 latency without infrastructure changes |
-| NFR05 Cost | Do not exceed maximum budget of $100/y |
+| NFR-01 Security | 0 credentials in code; JWT lifespan ≤ 1h; automatic secret rotation every 30 days using AWS Secrets Manager; 100% clases Principle of least privilege |
+| NFR-02 Maintainability | Test coverage > 80% in business logic layer; cyclomatic complexity < 10 per function |
+| NFR-03 Availability | 99.5% monthly (allowing for Lambda cold starts) |
+| NFR-04 Scalability | Support 100 concurrent users with < 500ms p95 latency without infrastructure changes |
+| NFR-05 Cost | Do not exceed maximum budget of $100/y |
 
-### Technical decisions
-- **TD01:** User access by user and password credentials.
-- **TD02:** Store password always hashed (bcrypt).
-- **TD03:** Implement 1h-exp JWT signed with HS256, secret stored in AWS Secrets Manager.
-- **TD04:** Store JWT in safe place, never in localStorage.
-- **TD05:** 6-alphanumeric char case-insensitive ID is secure by calculating with +2 billions of combinations means ~0.000056% daily collisions risk with 50 meals items and ~0.0229% catalog meals collision risk with 1000 items.
-
-### ADR-001: Authentication method & Password storage
+### Architecture Decision Record
+### ADR-01: Authentication method & Password storage
 Decision: user access with credentials and password is stored in bcrypt hash.
 Why: hashing with salts to resists brute force via cost factor
 Trade-off: needs a password-reset flow (not yet in scope).
 
-### ADR-002: JWT lifetime & signing
+### ADR-02: JWT lifetime & signing
 Decision: 1h JWT, HS256, secret in Secrets Manager.
 Why: native API Gateway JWT Authorizer so short window limits damage from token theft and symmetric signing is enough for a single-service API. 
 Trade-off: no revocation before expiry mitigated by the short TTL.
 
-### ADR-003: JWT client storage
+### ADR-03: JWT client storage
 Decision: JWT store local in secure cookie never localStorage.
 Why: avoids XSS-based token theft risk.
 Trade-off: Symmetric HS256 is enough intead asymmetric RS256/ES256 
 
-### ADR-004: Resource ID format
+### ADR-04: Resource ID format
 Decision: 6-char case-insensitive alphanumeric ID.
 Why: readable and +2 billions combinations means <0.03% collision risk at 1000 items.
 Trade-off: not ID unpredictability.
@@ -58,20 +52,20 @@ Security considerations are treated as part of the design and architecture rathe
 * Separation between application layers.
 * Controlled access to persistent data.
 * No hard-coded credentials.
-### 🎯 Threat Model (minimal)
+### 🎯 Threat Model
 | Threat | Mitigation |
 | --- | --- |
-| PIN brute-force | Temporary block after N failed attempts (TD06) |
-| JWT theft/replay | 1h exp (TD03), HTTPS-only transport |
+| Database breach exposing password | Pass stored hashed (bcrypt) never in plaintext (ADR-01) |
+| Password brute-force | Temporary block after N failed attempts) |
+| JWT theft/replay | 1h exp (TD-03), HTTPS-only transport |
 | Cross-user data access | id_user derived only from JWT claim, never client input |
 | Stolen/leaked JWT secret | Stored in Secrets Manager, not in code/env vars committed to repo |
-| User ID broke access | uuid+6-char alphanumeric secret User PIN(TD04) makes guessing impractical |
-| Database breach exposing PINs | Stored hashed (bcrypt), never plaintext (TD08) |
+
 ### 🔐 Authentication Flow
-1. User access with User KEY, repeated invalid attempts trigger temporary block (TD06).
-2. Backend validates User KEY, creates session, issues JWT (TD03).
-3. Client sends JWT on every subsequent API call (Authorization header).
-4. Lambda extracts id_user embedded as claim from JWT (TD03) (this is the trusted source of truth).
+1. User access with credentials, repeated invalid attempts trigger temporary block (ADR-01).
+2. Backend validates credentials, creates session and issues JWT (ADR-02).
+3. Client sends JWT hosted on every subsequent API call (ADR-03) .
+4. Lambda extracts id_user embedded as claim from JWT (this is the trusted source of truth).
 
 ```js
 const jwt = require('jsonwebtoken');// explicit verify never dynamic
@@ -178,12 +172,20 @@ API Version: /v1
 Contract: 
 | Method | Endpoint | Description | Related FR |
 | --- | --- | --- | --- |
-| POST | `/meal` | Register {meal} in catalog | TD02 |
-| POST | `/log` | Log meal in selected date {date, {meal}} | FR01 |
-| PATCH | `/meal/{id_meal}` | Soft delete meal of catalog | TD03 |
-| PATCH | `/log/{id_log}` | Soft delete logged meal | TD01 |
+| POST | `/meal` | Register {meal} in catalog | TD0X ? |
+| POST | `/log` | Log meal in selected date {date, {meal}} | FR-01 |
+| PATCH | `/meal/{id_meal}` | Soft delete available meal | FR-05 |
+| PATCH | `/log/{id_log}` | Soft delete logged meal | TD0X ? |
 | GET | `/meals` | Returns Available meals catalog | FR04 |
 | GET | `/logs?date=` | Returns Logged meals for a given date | FR03, FR04 |
+
+- **FR-01:** Log meals with a single click in "+" button.
+- **FR-02:** Display a week navigator.
+- **FR-03:** Display kcal and macros for the selected date.
+- **FR-04:** Display **available meals** and **logged meals**.
+- **FR-05:** Add button for: Soft delete Available meals.
+- **FR-06:** Add button for: Soft delete Logged meals.
+
 
 Request/Response examples:
 ```json
