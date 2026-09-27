@@ -1,11 +1,13 @@
 # 🎯 Tracker
-A simple one click web app for tracking meals to achieve nutrition goals.
+A simple app for tracking meals to achieve yours goals in 1-click.
 
 ## 📋 Executive Summary
-Tracker is a simple app designed according to software development lifecycle (SDLC) practices, applying fundamental software engineering principles and design patterns. On well architected AWS cloud managed services.
+Tracker is built on a simple premise: less is more. Keep deliberately minimal design and remove friction make user's data private by defaul and logging a meal in 1-click.
 
 ## 📌 Status
-This project is being developed incrementally to practice software engineering and cloud architecture principles.
+This project is being developed incrementally with practice software engineering and cloud architecture principles.
+
+Tracker is a simple SPA designed according to software development lifecycle (SDLC) practices, applying fundamental software engineering principles and design patterns. On well architected AWS cloud managed services.
 
 ## 📋 I. Requirements
 ### ⚙️ Functional Requirements
@@ -31,7 +33,25 @@ This project is being developed incrementally to practice software engineering a
 - **TD04:** Store JWT in safe place, never in localStorage.
 - **TD05:** 6-alphanumeric char case-insensitive ID is secure by calculating with +2 billions of combinations means ~0.000056% daily collisions risk with 50 meals items and ~0.0229% catalog meals collision risk with 1000 items.
 
+### ADR-001: Authentication method & Password storage
+Decision: user access with credentials and password is stored in bcrypt hash.
+Why: hashing with salts to resists brute force via cost factor
+Trade-off: needs a password-reset flow (not yet in scope).
 
+### ADR-002: JWT lifetime & signing
+Decision: 1h JWT, HS256, secret in Secrets Manager.
+Why: native API Gateway JWT Authorizer so short window limits damage from token theft and symmetric signing is enough for a single-service API. 
+Trade-off: no revocation before expiry mitigated by the short TTL.
+
+### ADR-003: JWT client storage
+Decision: JWT store local in secure cookie never localStorage.
+Why: avoids XSS-based token theft risk.
+Trade-off: Symmetric HS256 is enough intead asymmetric RS256/ES256 
+
+### ADR-004: Resource ID format
+Decision: 6-char case-insensitive alphanumeric ID.
+Why: readable and +2 billions combinations means <0.03% collision risk at 1000 items.
+Trade-off: not ID unpredictability.
 
 ## 🛠️ II. SecDevOps: Principles & Patterns
 ### 🔐 Security
@@ -166,7 +186,7 @@ Contract:
 Request/Response examples:
 ```json
 // 1. HTTP POST /meal
-{ "meal": { "id_meal": "", "label": "100g almonds", "k": "579", "p": "21", "c": "22", "f": "50" } }
+{ "meal": { "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } }
 
 // `a1a1a1` Backend generates
 // DynamoDB state after write:
@@ -178,7 +198,7 @@ Request/Response examples:
 
 ```json
 // 2. HTTP POST /log
-{ "date": "20260719", { "id_meal": "a1a1a1", "label": "100g almonds", "k": "579", "p": "21", "c": "22", "f": "50" } }
+{ "date": "20260719", "meal": { "id_meal": "a1a1a1", "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } }
 
 // `b1b1b1` Backend generates
 // DynamoDB state after write:
@@ -218,9 +238,8 @@ Request/Response examples:
 
 // Response 200
 [
-  { "id_meal": "a1a1a1", "label": "100g almonds", "k": "579", "p": "21", "c": "22", "f": "50" },
-  { "id_meal": "a2a2a2", "label": "100 grams of almonds", "k": "579", "p": "21", "c": "22", "f": "50" },
-  { "id_meal": "a3a3a3", "label": "155g yogurt", "k": "285", "p": "12", "c": "133", "f": "8" }
+  { "id_meal": "a1a1a1", "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 },
+  { "id_meal": "a3a3a3", "label": "155g yogurt", "k": 285, "p": 12, "c": 133, "f": 8 }
 ]
 ```
 
@@ -234,9 +253,8 @@ Request/Response examples:
 
 // Response 200
 [
-  { "id_log": "b1b1b1", "order": "01", "meal": { "id_meal": "a1a1a1", "label": "100g almonds", "k": "579", "p": "21", "c": "22", "f": "50" } },
-  { "id_log": "b2b2b2", "order": "02", "meal": { "id_meal": "a1a1a1", "label": "100g almonds", "k": "579", "p": "21", "c": "22", "f": "50" } },
-  { "id_log": "b3b3b3", "order": "03", "meal": { "id_meal": "a3a3a3", "label": "155g yogurt", "k": "285", "p": "12", "c": "133", "f": "8" } }
+  { "id_log": "b1b1b1", "order": "01", "meal": { "id_meal": "a1a1a1", "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } },
+  { "id_log": "b3b3b3", "order": "02", "meal": { "id_meal": "a3a3a3", "label": "155g yogurt", "k": 285, "p": 12, "c": 133, "f": 8 } }
 ]
 ```
 
@@ -269,7 +287,7 @@ Return Types:
 | `DeletedLog` | `{ "date": string, "id_log": string, "order": string, "DeletedAt": string }` |
 
 ### 🗃️ Data Modeling (Amazon DynamoDB)
-Amazon DynamoDB Single-Table Design:
+Amazon DynamoDB Table for Reference **(Implemented by IaC)**
 ```
 aws dynamodb create-table \                   # create table
     --table-name Tracker \
