@@ -142,27 +142,19 @@ sequenceDiagram
 
 ## 📐 III. Software & DB Design
 
-### 🖥️ Frontend Design
-    Observer Design Pattern: to show changes in HEADER if logged list is modify.
-#### HEADER
-1. **`[ S/1 | M/2 | T/3 | W/4 | T/5 | S/6 | S/7 ]`** (**FR02:** week-nav: day of week + day of month).
-2. **`[ Kcal | Prot | Carb | Fat ]`** (**FR03:** Kcal & macros for the selected date).
-#### BODY
-1. **`[ < Logged list > ]`** (**FR04:** Logged meals eaten).
-2. **`[ < Meals list > ]`** (**FR01, FR04:** Available meals catalog, with add (+) button).
 ### 🖥️ Frontend Design Wireframe
 ```
-┌───────────────────────────────┐
-│   S | M | T | W | T | S | S   │   (FR02)
-│   1 | 2 | 3 | 4 | 5 | 6 | 7   │   (FR02)
-│    Kcal | Prot | Carb | Fat   │   (FR03)
-├───────────────────────────────┤
-│                               │
-│ [ Logged List (K|P|C|G) (x) ] │   (FR04)
-│                               │
-│ [ Meals List      (-) N (+) ] │   (FR01,FR04)
-│                               │
-└───────────────────────────────┘
+┌─────────────────────────────────┐   <HEADER>
+│    S | M | T | W | T | S | S    │   *FR-02  --> Week-nav: day of week + day of month
+│    1 | 2 | 3 | 4 | 5 | 6 | 7    │   *FR-02  /
+│     Kcal | Prot | Carb | Fat    │   *FR-03  --> Kcal & macros for the selected date
+├─────────────────────────────────┤   </HEADER>
+│                                 │   <BODY>
+│ [ <Logged List> (K|P|C|G) (x) ] │   *FR-04  --> Logged meals eaten
+│                                 │
+│ [ <Meals List >     (-) N (+) ] │   *FR-01,FR-04  -->  "+" button & available meals list
+│                                 │
+└─────────────────────────────────┘   </BODY>
 ```
 ### 🗃️ API Gateway
 Auth strategy: JWT (see Authentication Flow) for user identity: id_user always derived from JWT claim, never accepted as client input.
