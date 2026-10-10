@@ -1,4 +1,4 @@
-name: Deploy to S3 by ACCESS KEY
+name: Deploy frontend to S3
 
 on:
   push:
@@ -20,6 +20,6 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1 # Cambia esto por la región de tu bucket (ej. us-west-2)
 
-    - name: Sync S3 files
+    - name: Sync frontend to S3
       run: |
-        aws s3 sync . s3://bucket-aws-pruebas --delete
+        aws s3 sync ./app/web/ s3://bucket-aws-pruebas --delete
