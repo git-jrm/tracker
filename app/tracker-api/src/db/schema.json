@@ -1,22 +1,22 @@
 {
-    "TableName": "RegistroAlimentosUsuarios",
+    "TableName": "Tracker",
     "AttributeDefinitions": [
         {
-            "AttributeName": "PK_User",
+            "AttributeName": "PK",
             "AttributeType": "S"
         },
         {
-            "AttributeName": "SK_Date",
+            "AttributeName": "SK",
             "AttributeType": "S"
         }
     ],
     "KeySchema": [
         {
-            "AttributeName": "PK_User",
+            "AttributeName": "PK",
             "KeyType": "HASH"
         },
         {
-            "AttributeName": "SK_Date",
+            "AttributeName": "SK",
             "KeyType": "RANGE"
         }
     ],
