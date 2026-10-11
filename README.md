@@ -20,12 +20,13 @@ Actively built as an incremental project, applying SDLC practices, cloud archite
 
 ## 📋 I. Requirements
 ### ⚙️ Functional Requirements
-- **FR-01:** Log meals with a single click in "+" button.
-- **FR-02:** Display a week navigator.
-- **FR-03:** Display kcal and macros for the selected date.
-- **FR-04:** Display **available meals** and **logged meals**.
-- **FR-05:** Add button for: Soft delete Available meals.
-- **FR-06:** Add button for: Soft delete Logged meals.
+- **FR-01:** Show week navigator.
+- **FR-02:** Display user **Goals**. (API Implemented OK)
+- **FR-03:** Display **Catalog** List.
+- **FR-04:** **Log** with a click.
+- **FR-05:** Display **Log** List.
+- **FR-06:** Soft delete a **Log**.
+
 ### 🏛️ Non-Functional Requirements (architectural characteristics)
 | NFR | Measurable Goal |
 |---|---|
@@ -36,22 +37,22 @@ Actively built as an incremental project, applying SDLC practices, cloud archite
 | NFR-05 Cost | Do not exceed maximum budget of $100/y |
 
 ### Architecture Decision Record
-### ADR-01: Authentication method & Password storage
+#### ADR-01: Authentication method & Password storage
 Decision: user access with credentials and password is stored in bcrypt hash.
 Why: hashing with salts to resists brute force via cost factor
 Trade-off: needs a password-reset flow (not yet in scope).
 
-### ADR-02: JWT lifetime & signing
+#### ADR-02: JWT lifetime & signing
 Decision: 1h JWT, HS256, secret in Secrets Manager.
 Why: native API Gateway JWT Authorizer so short window limits damage from token theft and symmetric signing is enough for a single-service API.
 Trade-off: no revocation before expiry mitigated by the short TTL.
 
-### ADR-03: JWT client storage
+#### ADR-03: JWT client storage
 Decision: JWT store local in secure cookie never localStorage.
 Why: avoids XSS-based token theft risk.
 Trade-off: Symmetric HS256 is enough intead asymmetric RS256/ES256
 
-### ADR-04: Resource ID format
+#### ADR-04: Resource ID format
 Decision: 6-char case-insensitive alphanumeric ID.
 Why: readable and +2 billions combinations means <0.03% collision risk at 1000 items.
 Trade-off: not ID unpredictability.
@@ -168,82 +169,32 @@ sequenceDiagram
 #### Front Wireframe
 ```
 ┌───────────────────────────────┐
-│   S | M | T | W | T | S | S   │   (FR02)
-│   1 | 2 | 3 | 4 | 5 | 6 | 7   │   (FR02)
-│    0.0 K | 0 P | 0 C | 0 F    │   (FR03)
+│   S | M | T | W | T | S | S   │   (FR-01)
+│   1 | 2 | 3 | 4 | 5 | 6 | 7   │   (FR-01)
+│    K1/K2|P1/P2|C1/C2|F1/F2    │   (FR-02)
 ├───────────────────────────────┤
 │                               │
-│ <  Log[i] (K|P|C|F)      x  > │   (FR04)
+│ <  Log[i] (K|P|C|F)      x  > │   (FR-05,FR-06)
 │                               │
-│ <  Catalog[i] (K|P|C|F) -0+ > |  (FR01,FR04)
+│ <  Catalog[i] (K|P|C|F) -0+ > |  (FR-03,FR-04)
 │                               │
 └───────────────────────────────┘
 ```
 ### 🗃️ API Gateway
-    JWT Auth strategy: for identity user always derived from JWT claim, see Authentication Flow.
 
 API Version: /v1
 
 Contract:
 | Method | Endpoint | Description | Related FR |
 | --- | --- | --- | --- |
-| POST | `/catalog` | Register {meal} in catalog | TD02 |
-| POST | `/logs` | Log meal in selected date | FR01 |
-| PATCH | `/catalog/{id_meal}` | Soft delete item | TD03 |
-| PATCH | `/logs/{id_log}` | Soft delete logged meal | TD01 |
-| GET | `/meals` | Returns Available meals catalog | FR04 |
-| GET | `/logs?date=` | Returns Logged meals for a given date | FR03, FR04 |
-
-- **FR-01:** Log meals with a single click in "+" button.
-- **FR-02:** Display a week navigator.
-- **FR-03:** Display kcal and macros for the selected date.
-- **FR-04:** Display **available meals** and **logged meals**.
-- **FR-05:** Add button for: Soft delete Available meals.
-- **FR-06:** Add button for: Soft delete Logged meals.
-
+| GET | `/goals` | Returns user's goals | FR-02 |
+| GET | `/catalogs` | Returns Catalogs | FR-03 |
+| POST | `/logs?date=` | Log in selected date | FR-04 |
+| GET | `/logs?date=` | Returns Logs for a date | FR-05 |
+| PATCH | `/logs` | Soft delete Log | TD-06 |
 
 Request/Response examples:
-```json
-// 1. POST /logs?date=2026-10-04
-POST { "MEAL": { "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } }
-// 201 Created
-{ "OK": true, "SK": "LOG#YYYY-MM-DD#a1a1a1" }
-
-// 2. GET /logs?date=2026-10-04
-// 200 OK
-{
-  "date": "2026-10-04",
-  "totals": { "k": 640, "p": 25, "c": 27, "f": 54 },
-  "logs": [
-    { "type": "MEAL", "label": "almonds", "k": 579, "p": 21, "c": 22, "f": 50 },
-    { "type": "MEAL", "label": "yogurt", "k": 61, "p": 4, "c": 5, "f": 4 }
-  ]
-}
-
-// 3. PATCH /logs
-PATCH { "SK": "LOG#YYYY-MM-DD#a1a1a1" }
-// 200 OK
-{ "OK": true, "SK": "LOG#YYYY-MM-DD#a1a1a1", "DeletedAt": "2026-10-04T20:44:00" }
-
-
-// 4. POST /catalog?date=2026-10-04
-POST { "MEAL": { "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } }
-// 201 Created
-{ "OK": true, "SK": "CATALOG#a1a1a1" }
-
-// 5. GET /catalog?date=20261004
-// 200 OK
-[
-  { "type": "MEAL", "label": "almonds", "k": 579, "p": 21, "c": 22, "f": 50 },
-  { "type": "MEAL", "label": "yogurt", "k": 61, "p": 4, "c": 5, "f": 4}
-]
-
-// 6. PATCH /catalog
-PATCH { "SK": "CATALOG#a1a1a1" }
-// 200 OK
-{ "OK": true, "SK": "CATALOG#a1a1a1", "DeletedAt": "2026-10-04T20:33:00" }
-
-```
+app/tracker-api/src/requests/test.rest
 
 Error handling:
 | Status | Case | Example endpoint |
@@ -255,37 +206,114 @@ Error handling:
     S-SOLID Design Principles: Single responsibility for components and methods.
     Singleton Design Pattern: Ensure single DB connections.
 
-### AWS Lambda Function:
-To export code to cloud:
-```bash
-set -euo pipefail
-PROJECT_DIR="$PWD"
-STAGE="$(mktemp -d)"
-echo "$STAGE"
-```
-
 #### Lambda Function Signatures
 ```
-MealService.createCatalog(item={...}) : SK
-MealService.createLog(item={...}) : SK
-MealService.deleteCatalog(SK) : SK
-MealService.deleteLog(SK) : SK
-MealService.getCatalog() : Item[]
-MealService.getLogs(date) : Item[]
+...
 ```
 
 ### DynamoDB Single-Table Model
 
-| PK | SK | Type | Order | Details | DeletedAt |
-| --- | --- | --- | --- | --- | --- |
-| USER#U1 | CREDENTIALS | | | { user="U1", hash="$1$2$3" } | |
-| USER#U1 | GOAL#2026-08-04 | | | { k=2300, p=90, c=160, f=50 } | |
-| USER#U1 | GOAL#2026-09-04 | | | { k=2500, p=110, c=180, f=60 } | |
-| USER#U1 | GOAL#2026-10-04 | | | { k=2700, p=130, c=200, f=70 } | |
-| USER#U1 | CATALOG#a1a1a1 | MEAL | 1 | {"label":"almonds","k":579,"p":21,"c":22,"f":50} | |
-| USER#U1 | CATALOG#b2b2b2 | MEAL | 2 | {"label":"yogurt","k":61,"p":4,"c":5,"f":4} | |
-| USER#U1 | LOG#2026-10-04#c3c3c3 | MEAL | 1 | {"label": "almonds","k": 90,"p": 4,"c": 5,"f": 9} | |
-| USER#U1 | LOG#2026-10-04#d4d4d4 | MEAL | 2 | {"label": "yogurt","k": 60,"p": 4,"c": 5,"f": 4} | |
+**DYNAMO GOAL ENTITY:**
+```
+{
+  "PK": {
+    "S": "USER#U1"
+  },
+  "SK": {
+    "S": "GOAL#2026-10-04"
+  },
+  "Details": {
+    "M": {
+      "c": {
+        "N": "300"
+      },
+      "f": {
+        "N": "90"
+      },
+      "k": {
+        "N": "2500"
+      },
+      "p": {
+        "N": "100"
+      }
+    }
+  }
+}
+```
+
+**DYNAMO CATALOG ENTITY:**
+```
+{
+  "PK": {
+    "S": "USER#U1"
+  },
+  "SK": {
+    "S": "CATALOG#a1a1a1"
+  },
+  "Type": {
+    "S": "MEAL"
+  },
+  "Order": {
+    "N": "1"
+  },
+  "Details": {
+    "M": {
+      "c": {
+        "N": "22"
+      },
+      "f": {
+        "N": "50"
+      },
+      "k": {
+        "N": "579"
+      },
+      "label": {
+        "S": "almonds"
+      },
+      "p": {
+        "N": "21"
+      }
+    }
+  }
+}
+```
+
+**DYNAMO LOG ENTITY:**
+```
+{
+  "PK": {
+    "S": "USER#U1"
+  },
+  "SK": {
+    "S": "LOG#2026-10-04#c3c3c3"
+  },
+  "Type": {
+    "S": "MEAL"
+  },
+  "Order": {
+    "N": "1"
+  },
+  "Details": {
+    "M": {
+      "c": {
+        "N": "5"
+      },
+      "f": {
+        "N": "9"
+      },
+      "k": {
+        "N": "90"
+      },
+      "label": {
+        "S": "almonds"
+      },
+      "p": {
+        "N": "4"
+      }
+    }
+  }
+}
+```
 
 ### DynamoDB Queries
 | Access Patterns | Search |

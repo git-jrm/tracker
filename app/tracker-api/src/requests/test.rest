@@ -1,84 +1,74 @@
-### DynamoDB Single-Table Model
-// | PK | SK | Type | Order | Details | DeletedAt |
-// | --- | --- | --- | --- | --- | --- |
-// | USER#U1 | CREDENTIALS | | | { user="U1", hash="$1$2$3" } | |
-// | USER#U1 | GOAL#2026-10-04 | | | { k=2000, p=150, c=200, f=60 } | |
-// | USER#U1 | CATALOG#a1a1a1 | MEAL | 1 | {"item":{"label":"almonds","k":579,"p":21,"c":22,"f":50}} | |
-// | USER#U1 | CATALOG#b2b2b2 | MEAL | 2 | {"item":{"label":"yogurt","k":61,"p":4,"c":5,"f":4}} | |
-// | USER#U1 | LOG#2026-10-04#c3c3c3 | MEAL | 1 | {"item":{"label":"almonds","k":579,"p":21,"c":22,"f":50}} | |
-// | USER#U1 | LOG#2026-10-04#d4d4d4 | MEAL | 2 | {"item":{"label":"yogurt","k":61,"p":4,"c":5,"f":4}} | |
-### DOCUMENTACION Request/Response (FUENTE DE LA VERDAD - EJEMPLOS):
-// 1. POST /logs?date=2026-10-04
-// POST { "MEAL": { "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } }
-// 201 Created
-// { "OK": true, "SK": "LOG#YYYY-MM-DD#a1a1a1" }
-// 2. GET /logs?date=2026-10-04
-// 200 OK
-// [
-//   { "type": "MEAL", "label": "almonds", "k": 579, "p": 21, "c": 22, "f": 50 },
-//   { "type": "MEAL", "label": "yogurt", "k": 61, "p": 4, "c": 5, "f": 4}
-// ]
-// 3. PATCH /logs
-// PATCH { "SK": "LOG#YYYY-MM-DD#a1a1a1" }
-// 200 OK
-// { "OK": true, "SK": "LOG#YYYY-MM-DD#a1a1a1", "DeletedAt": "2026-10-04T20:44:00" }
-// 4. POST /catalog?date=2026-10-04
-// POST { "MEAL": { "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 } }
-// 201 Created
-// { "OK": true, "SK": "CATALOG#a1a1a1" }
-// 5. GET /catalog?date=2026-10-04
-// 200 OK
-// [
-//   { "type": "MEAL", "label": "almonds", "k": 579, "p": 21, "c": 22, "f": 50 },
-//   { "type": "MEAL", "label": "yogurt", "k": 61, "p": 4, "c": 5, "f": 4}
-// ]
-// 6. PATCH /catalog
-// PATCH { "SK": "CATALOG#a1a1a1" }
-// 200 OK
-// { "OK": true, "SK": "CATALOG#a1a1a1", "DeletedAt": "2026-10-04T20:33:00" }
+
 
 @baseUrl = http://localhost:3000/v1
 @date1 = 2026-10-06
 @date2 = 2026-10-07
 
-### 1. POST : Log a meal for a selected date
+
+##############################################
+###   GET GOALS
+GET {{baseUrl}}/goals?date={{date1}}
+# OUTPUT:
+{
+  "k": 2000,
+  "p": 150,
+  "c": 200,
+  "f": 60
+}
+##############################################
+
+
+##############################################
+###   GET CATALOGS
+GET {{baseUrl}}/catalogs?date={{date1}}
+# OUTPUT:
+[
+  {
+    "type": "MEAL",
+    "label": "100g almonds",
+    "k": 579,
+    "c": 22,
+    "p": 21,
+    "f": 50
+  },
+  {
+    "type": "MEAL",
+    "label": "100g orange",
+    "k": 579,
+    "c": 22,
+    "p": 21,
+    "f": 50
+  }
+]
+##############################################
+
+
+##############################################
+###   POST LOG
 POST {{baseUrl}}/logs?date={{date1}}
 Content-Type: application/json
 
 {
-  "MEAL": { "label": "100g orange", "k": 579, "p": 21, "c": 22, "f": 50 }
+  "Type": "MEAL",
+  "Details": { "label": "100g orange", "k": 579, "p": 21, "c": 22, "f": 50 }
 }
+##############################################
 
-### 2. GET : Get logs for that date
+
+##############################################
+###   GET LOGS & EMPTY LOGS
 GET {{baseUrl}}/logs?date={{date1}}
 
-### 2.b GET : Get logs for another date
-GET {{baseUrl}}/logs?date={{date2}}
 
-### 3. PATCH : Soft-delete a log entry (use the SK returned by POST)
+GET {{baseUrl}}/logs?date={{date2}}
+##############################################
+
+
+### PATCH SOFT DELETE LOG
 PATCH {{baseUrl}}/logs
 Content-Type: application/json
 
 {
   "SK": "LOG#2026-10-05#a1a1a1"
 }
-
-### 4. POST : Add a meal to the catalog
-POST {{baseUrl}}/catalog?date={{date1}}
-Content-Type: application/json
-
-{
-  "MEAL": { "label": "100g almonds", "k": 579, "p": 21, "c": 22, "f": 50 }
-}
-
-### 5. GET : Get catalog for that date
-GET {{baseUrl}}/catalog
-
-### 6. PATCH : Delete a catalog entry
-PATCH {{baseUrl}}/catalog
-Content-Type: application/json
-
-{
-  "SK": "CATALOG#a1a1a1"
-}
-
+###############################################

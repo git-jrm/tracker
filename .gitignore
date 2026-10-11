@@ -2,3 +2,4 @@
 *.zip
 **/.env
 **/.env.*
+app/tracker-api/src/requests/aws-lambda-test.rest

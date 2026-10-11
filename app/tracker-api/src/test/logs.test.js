@@ -3,13 +3,13 @@ import { after, before, describe, it } from 'node:test';
 
 // Tests use the in-memory adapter. The API defaults to DynamoDB outside tests.
 process.env.DB_ADAPTER = 'memory';
-const { putItemIfAbsent } = await import('../db/simulated-table.js');
+const { putItemIfAbsent, queryItems } = await import('../db/simulated-table.js');
 const { default: app } = await import('../app.js');
 
 const testDate = '2099-12-31';
 const emptyDate = '2026-08-01';
 const meal = (label, k, p, c, f) => ({ label, k, p, c, f });
-const activeGoal = { k: 2700, p: 130, c: 200, f: 70 };
+const activeGoal = { k: 2500, p: 110, c: 180, f: 60 };
 
 //  ACTIVE ITEM MORE RECENT NO DELETED GOAL#<date> BEFORE DATE IF GIVEN AND MAX TODAY
 for (const item of [
@@ -41,7 +41,8 @@ describe('logs API (contract test.rest)', () => {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-                MEAL: meal('100g almonds', 579, 21, 22, 50)
+                Type: 'MEAL',
+                Details: meal('100g almonds', 579, 21, 22, 50)
             })
         });
         const result = await response.json();
@@ -50,13 +51,23 @@ describe('logs API (contract test.rest)', () => {
         assert.deepEqual(Object.keys(result), ['OK', 'SK']);
         assert.equal(result.OK, true);
         assert.match(result.SK, /^LOG#2099-12-31#[a-z0-9]{6}$/);
+
+        const storedLog = queryItems('USER#U1', `LOG#${testDate}#`)
+            .find((item) => item.SK === result.SK);
+        assert.deepEqual(storedLog, {
+            PK: 'USER#U1',
+            SK: result.SK,
+            Type: 'MEAL',
+            Order: 1,
+            Details: meal('100g almonds', 579, 21, 22, 50)
+        });
     });
 
     it('rejects malformed meals and invalid or missing dates', async () => {
         const invalidMeal = await fetch(`${baseUrl}/logs?date=${testDate}`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ MEAL: { label: 'almonds', k: '579' } })
+            body: JSON.stringify({ Type: 'MEAL', Details: { label: 'almonds', k: '579' } })
         });
         const missingDate = await fetch(`${baseUrl}/logs`);
         const invalidDate = await fetch(`${baseUrl}/logs?date=2026-02-30`);
@@ -77,11 +88,21 @@ describe('logs API (contract test.rest)', () => {
         });
     });
 
+    it('GET catalogs returns active catalog meals in order and API format', async () => {
+        const response = await fetch(`${baseUrl}/catalogs`);
+
+        assert.equal(response.status, 200);
+        assert.deepEqual(await response.json(), [
+            { type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50) },
+            { type: 'MEAL', ...meal('100g orange', 579, 21, 22, 50) }
+        ]);
+    });
+
     it('3. PATCH soft-deletes a log and it no longer appears in GET', async () => {
         const createResponse = await fetch(`${baseUrl}/logs?date=${testDate}`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ MEAL: meal('yogurt', 61, 4, 5, 4) })
+            body: JSON.stringify({ Type: 'MEAL', Details: meal('yogurt', 61, 4, 5, 4) })
         });
         const created = await createResponse.json();
 

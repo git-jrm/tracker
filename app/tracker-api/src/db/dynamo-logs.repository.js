@@ -29,6 +29,29 @@ export const listLogs = async (PK, date) => {
     return Items.sort((left, right) => left.Order - right.Order);
 };
 
+export const listCatalogs = async (PK) => {
+    const Items = [];
+    let ExclusiveStartKey;
+
+    do {
+        const response = await dynamoDB.send(new QueryCommand({
+            TableName: env.DYNAMODB_TABLE_NAME,
+            KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+            FilterExpression: 'attribute_not_exists(DeletedAt)',
+            ExpressionAttributeValues: {
+                ':pk': PK,
+                ':prefix': 'CATALOG#'
+            },
+            ExclusiveStartKey
+        }));
+
+        Items.push(...(response.Items ?? []));
+        ExclusiveStartKey = response.LastEvaluatedKey;
+    } while (ExclusiveStartKey);
+
+    return Items.sort((left, right) => (left.Order ?? 0) - (right.Order ?? 0));
+};
+
 export const getLatestGoal = async (PK, date) => {
     let ExclusiveStartKey;
 

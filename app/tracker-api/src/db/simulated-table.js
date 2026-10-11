@@ -15,6 +15,20 @@ const sampleItems = [
         SK: 'GOAL#2026-10-04',
         Details: { k: 2000, p: 150, c: 200, f: 60 }
     },
+    {
+        PK: 'USER#U1',
+        SK: 'CATALOG#a1a1a1',
+        Type: 'MEAL',
+        Order: 1,
+        Details: { label: '100g almonds', k: 579, c: 22, p: 21, f: 50 }
+    },
+    {
+        PK: 'USER#U1',
+        SK: 'CATALOG#b2b2b2',
+        Type: 'MEAL',
+        Order: 2,
+        Details: { label: '100g orange', k: 579, c: 22, p: 21, f: 50 }
+    },
     ...[
         ['c3c3c3', sampleMeals[0]],
         ['d4d4d4', sampleMeals[1]]
@@ -23,7 +37,7 @@ const sampleItems = [
         SK: `LOG#${sampleDate}#${id}`,
         Type: 'MEAL',
         Order: index + 1,
-        Details: { item }
+        Details: item
     }))
 ];
 

@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { env } from '../config/env.js';
-import { getLatestGoal, listLogs, markLogDeleted, saveLog } from '../db/logs.repository.js';
+import { getLatestGoal, listCatalogs, listLogs, markLogDeleted, saveLog } from '../db/logs.repository.js';
 
 const USER_PK = `USER#${env.SIMULATED_USER_ID}`;
 const LOG_FIELDS = ['k', 'p', 'c', 'f'];
@@ -40,13 +40,20 @@ const normalizeMeal = (meal) => {
     };
 };
 
+const toMealResponse = ({ Type, Details }) => ({
+    type: Type,
+    ...((Details?.item && typeof Details.item === 'object') ? Details.item : Details)
+});
+
+export const getCatalogs = async () => {
+    const items = await listCatalogs(USER_PK);
+    return items.map(toMealResponse);
+};
+
 export const getLogsForDate = async (stringDateInput) => {
     const date = validateDate(stringDateInput);
     const items = await listLogs(USER_PK, date);
-    const logs = items.map(({ Type, Details }) => ({
-        type: Type,
-        ...Details.item
-    }));
+    const logs = items.map(toMealResponse);
     const totals = logs.reduce((sum, log) => {
         for (const field of LOG_FIELDS) sum[field] += log[field];
         return sum;
@@ -62,9 +69,11 @@ export const getGoalsForDate = async (stringDateInput) => {
     return goal?.Details ?? null;
 };
 
-export const createLogForDate = async (stringDateInput, mealInput) => {
+export const createLogForDate = async (stringDateInput, logInput) => {
     const date = validateDate(stringDateInput);
-    const meal = normalizeMeal(mealInput);
+    const type = logInput?.Type ?? 'MEAL';
+    if (type !== 'MEAL') throw createError(400, 'Type must be MEAL.');
+    const meal = normalizeMeal(logInput?.Details ?? logInput?.MEAL ?? logInput);
     const existingLogs = await listLogs(USER_PK, date);
     const order = existingLogs.reduce((max, item) => Math.max(max, item.Order ?? 0), 0) + 1;
 
@@ -74,9 +83,9 @@ export const createLogForDate = async (stringDateInput, mealInput) => {
         const saved = await saveLog({
             PK: USER_PK,
             SK,
-            Type: 'MEAL',
+            Type: type,
             Order: order,
-            Details: { item: meal }
+            Details: meal
         });
 
         if (saved) return SK;

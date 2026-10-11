@@ -3,6 +3,9 @@ import { markItemDeleted, putItemIfAbsent, queryItems } from './simulated-table.
 export const listLogs = async (PK, date) => queryItems(PK, `LOG#${date}#`)
   .sort((left, right) => left.Order - right.Order);
 
+export const listCatalogs = async (PK) => queryItems(PK, 'CATALOG#')
+  .sort((left, right) => (left.Order ?? 0) - (right.Order ?? 0));
+
 export const getLatestGoal = async (PK, date) => queryItems(PK, 'GOAL#')
   .filter((item) => item.SK <= `GOAL#${date}`)
   .sort((left, right) => right.SK.localeCompare(left.SK))[0] ?? null;

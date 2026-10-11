@@ -1,4 +1,13 @@
-import { createLogForDate, deleteLog, getGoalsForDate, getLogsForDate } from '../services/logs.service.js';
+import { createLogForDate, deleteLog, getCatalogs as getCatalogsFromService, getGoalsForDate, getLogsForDate } from '../services/logs.service.js';
+
+export const getCatalogs = async (req, res, next) => {
+    try {
+        const catalogs = await getCatalogsFromService();
+        return res.status(200).json(catalogs);
+    } catch (error) {
+        return next(error);
+    }
+};
 
 export const getLogs = async (req, res, next) => {
     try {
@@ -11,7 +20,7 @@ export const getLogs = async (req, res, next) => {
 
 export const createLog = async (req, res, next) => {
     try {
-        const SK = await createLogForDate(req.query.date, req.body?.MEAL);
+        const SK = await createLogForDate(req.query.date, req.body);
         return res.status(201).json({ OK: true, SK });
     } catch (error) {
         return next(error);
