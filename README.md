@@ -607,6 +607,15 @@ ls -lh "$OUT"
 unzip -t "$OUT"
 ```
 
+#### Add to package.json with a "zip" script:
+```json
+    "zip": "bash -c 'set -euo pipefail; PROJECT_DIR=\"$PWD\"; STAGE=\"$(mktemp -d)\"; OUT=\"$PROJECT_DIR/tracker-api-lambda-$(date +%Y%m%d-%H%M%S).zip\"; echo \"Carpeta temporal: $STAGE\"; cp -R src package.json pnpm-lock.yaml \"$STAGE/\"; pnpm install --prod --frozen-lockfile --dir \"$STAGE\"; ( cd \"$STAGE\" && zip -qry \"$OUT\" src package.json node_modules ); ls -lh \"$OUT\"; unzip -t \"$OUT\"'"
+```
+To build API:
+```json
+    npm run zip
+```
+
 ### 🗃️ Data Modeling: Amazon DynamoDB
 Amazon DynamoDB Table: Created by AWS CLI
 ***schema.json***

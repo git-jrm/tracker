@@ -81,10 +81,11 @@ describe('logs API (contract test.rest)', () => {
         const response = await fetch(`${baseUrl}/logs?date=${testDate}`);
 
         assert.equal(response.status, 200);
+        const storedLog = queryItems('USER#U1', `LOG#${testDate}#`)[0];
         assert.deepEqual(await response.json(), {
             date: testDate,
             totals: { k: 579, p: 21, c: 22, f: 50 },
-            logs: [{ type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50) }]
+            logs: [{ type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50), SK: storedLog.SK, Order: 1 }]
         });
     });
 
@@ -93,8 +94,8 @@ describe('logs API (contract test.rest)', () => {
 
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), [
-            { type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50) },
-            { type: 'MEAL', ...meal('100g orange', 579, 21, 22, 50) }
+            { type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50), SK: 'CATALOG#a1a1a1', Order: 1 },
+            { type: 'MEAL', ...meal('100g orange', 579, 21, 22, 50), SK: 'CATALOG#b2b2b2', Order: 2 }
         ]);
     });
 
@@ -119,10 +120,11 @@ describe('logs API (contract test.rest)', () => {
         assert.match(deleted.DeletedAt, /^\d{4}-\d{2}-\d{2}T/);
 
         const getResponse = await fetch(`${baseUrl}/logs?date=${testDate}`);
+        const remainingLog = queryItems('USER#U1', `LOG#${testDate}#`)[0];
         assert.deepEqual(await getResponse.json(), {
             date: testDate,
             totals: { k: 579, p: 21, c: 22, f: 50 },
-            logs: [{ type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50) }]
+            logs: [{ type: 'MEAL', ...meal('100g almonds', 579, 21, 22, 50), SK: remainingLog.SK, Order: 1 }]
         });
     });
 
@@ -172,8 +174,8 @@ describe('logs API (contract test.rest)', () => {
             date: '2026-10-04',
             totals: { k: 640, p: 25, c: 27, f: 54 },
             logs: [
-                { type: 'MEAL', ...meal('almonds', 579, 21, 22, 50) },
-                { type: 'MEAL', ...meal('yogurt', 61, 4, 5, 4) }
+                { type: 'MEAL', ...meal('almonds', 579, 21, 22, 50), SK: 'LOG#2026-10-04#c3c3c3', Order: 1 },
+                { type: 'MEAL', ...meal('yogurt', 61, 4, 5, 4), SK: 'LOG#2026-10-04#d4d4d4', Order: 2 }
             ]
         });
     });

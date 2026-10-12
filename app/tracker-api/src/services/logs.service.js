@@ -40,9 +40,11 @@ const normalizeMeal = (meal) => {
     };
 };
 
-const toMealResponse = ({ Type, Details }) => ({
+const toMealResponse = ({ Type, SK, Order, Details }) => ({
     type: Type,
-    ...((Details?.item && typeof Details.item === 'object') ? Details.item : Details)
+    ...((Details?.item && typeof Details.item === 'object') ? Details.item : Details),
+    SK,
+    Order
 });
 
 export const getCatalogs = async () => {

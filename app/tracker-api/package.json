@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "zip": "bash -c 'set -euo pipefail; PROJECT_DIR=\"$PWD\"; STAGE=\"$(mktemp -d)\"; OUT=\"$PROJECT_DIR/tracker-api-lambda-$(date +%Y%m%d-%H%M%S).zip\"; echo \"Carpeta temporal: $STAGE\"; cp -R src package.json pnpm-lock.yaml \"$STAGE/\"; pnpm install --prod --frozen-lockfile --dir \"$STAGE\"; ( cd \"$STAGE\" && zip -qry \"$OUT\" src package.json node_modules ); ls -lh \"$OUT\"; unzip -t \"$OUT\"'"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1146.0",
