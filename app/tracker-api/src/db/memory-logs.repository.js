@@ -1,4 +1,4 @@
-import { markItemDeleted, putItemIfAbsent, queryItems } from './simulated-table.js';
+import { getItem, markItemDeleted, putItemIfAbsent, queryItems } from './simulated-table.js';
 
 export const listLogs = async (PK, date) => queryItems(PK, `LOG#${date}#`)
   .sort((left, right) => left.Order - right.Order);
@@ -13,3 +13,8 @@ export const getLatestGoal = async (PK, date) => queryItems(PK, 'GOAL#')
 export const saveLog = async (item) => putItemIfAbsent(item);
 
 export const markLogDeleted = async (PK, SK, DeletedAt) => markItemDeleted(PK, SK, DeletedAt);
+
+export const getActivation = async (activationId) =>
+  getItem(`ACTIVATION#${activationId}`, 'ACCESS') ?? null;
+
+export const saveActivation = async (item) => putItemIfAbsent(item);

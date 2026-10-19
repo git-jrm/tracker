@@ -37,25 +37,28 @@ Actively built as an incremental project, applying SDLC practices, cloud archite
 | NFR-05 Cost | Do not exceed maximum budget of $100/y |
 
 ### Architecture Decision Record
-#### ADR-01: Authentication method & Password storage
-Decision: user access with credentials and password is stored in bcrypt hash.
-Why: hashing with salts to resists brute force via cost factor
-Trade-off: needs a password-reset flow (not yet in scope).
 
-#### ADR-02: JWT lifetime & signing
-Decision: 1h JWT, HS256, secret in Secrets Manager.
-Why: native API Gateway JWT Authorizer so short window limits damage from token theft and symmetric signing is enough for a single-service API.
+#### ADR-01: Passwordless auth flow
+**Decision:** Implement device possession-based auth with Silent Login, combined with manual backend provisioning and zero PII storage.
+**Why:** To maximize user convenience by eliminating login forms, completely removing the risk of remote brute-force attacks, and eliminating data privacy compliance overhead (GDPR/CCPA) by avoiding PII.
+**Trade-offs:**
+* **Single-device lock-in:** Users cannot switch devices without manual admin re-provisioning.
+* **XSS Vulnerability Risk:** Token security depends on frontend integrity. Mitigation sanitize backend and use `textContent` in frontend.
+
+#### ADR-02: JWT lifetime & signing (WORKING PROGRESS)
+Decision: Implement JWT
+Why: security auth methos for best practice
 Trade-off: no revocation before expiry mitigated by the short TTL.
 
-#### ADR-03: JWT client storage
+#### ADR-03: JWT client storage (WORKING PROGRESS)
 Decision: JWT store local in secure cookie never localStorage.
 Why: avoids XSS-based token theft risk.
 Trade-off: Symmetric HS256 is enough intead asymmetric RS256/ES256
 
 #### ADR-04: Resource ID format
 Decision: 6-char case-insensitive alphanumeric ID.
-Why: readable and +2 billions combinations means <0.03% collision risk at 1000 items.
-Trade-off: not ID unpredictability.
+Why: readable and over 2 billions combinations means ~0.0002% collision risk at 100 items.
+Trade-off: Lacks ID unpredictability.
 
 ## 🛠️ II. SecDevOps: Principles & Patterns
 ### 🔐 Security
@@ -67,20 +70,28 @@ Security considerations are treated as part of the design and architecture rathe
 ### 🎯 Threat Model
 | Threat | Mitigation |
 | --- | --- |
-| JWT theft/replay | 1h exp (TD03), HTTPS-only transport |
+| JWT theft/replay | 1h exp (ADR-03), HTTPS-only transport |
 | Database breach exposing password | Hashed bcrypt never plaintext (ADR-01) |
 | Password brute-force | Temporary block after N failed attempts) |
 | Cross-user data access | id_user derived only from JWT claim, never client input |
 | Stolen/leaked JWT secret | Stored in Secrets Manager, not in code/env vars committed to repo |
-| XSS (Cross-Site Scripting) | JWT sent as Bearer in Authorization header, kept in memory |
-| XSS (Cross-Site Scripting) | JWT as Bearer in Authorization header, kept in memory. Strict CSP + output escaping |
+| XSS reflected | Sanitize request before process or store in backend. In front escape HTML before rendering.
 
-### 🔐 Authentication Flow
-1. User access with credentials, repeated invalid attempts trigger temporary block (ADR-01).
-2. Backend validates credentials, creates session and issues JWT (ADR-02).
-3. Client sends JWT hosted on every subsequent API call (ADR-03) .
-4. Lambda extracts id_user embedded as claim from JWT (this is the trusted source of truth).
+### 🔐 ADR-01: Registro y activación de dispositivo
 
+1. El navegador genera el actual un `activationId` aleatorio en `localStorage`.
+2. `GET /v1/activations?activationId=<id>` devuelve `ACTIVE` en cualquier otro caso `INACTIVE`.
+-ACTIVE=true: showApp(true), hide btnActivate para no duplicar solicitud, show btnDesactivate para forzar nuevo UUID.
+-ACTIVE=false: showApp(false), show btnActivate para enviar POST, hide btnDesactivate ya que aun no se ha enviado solicitud para activar oel admin no ha validado el registro.
+3. El usuario solicita activación con `POST /v1/activations` y `{ "activationId": "<id>" }`. La API guarda `Status: PENDING` y responde `202`.
+4. El administrador cambia el registro `PK=ACTIVATION#<id>`, `SK=ACCESS` a `Status=ACTIVE` en DynamoDB.
+5. Al volver a consultar, la interfaz muestra la aplicación solo si recibe `Status=ACTIVE`.
+
+El botón «Olvidar este dispositivo» borra el identificador únicamente del navegador; **no revoca ni elimina** el registro de DynamoDB. Para revocarlo, el administrador debe cambiar su estado.
+
+**Alcance actual:** la activación controla qué muestra la interfaz, pero no protege todavía los endpoints de datos. La autorización de API queda pendiente para ADR-02/JWT; no se debe considerar esta etapa una barrera de seguridad.
+
+### 🔐 API calls JWT Flow
 ```js
 const jwt = require('jsonwebtoken');// explicit verify of alg HS256
 
@@ -189,8 +200,8 @@ Contract:
 | --- | --- | --- | --- |
 | GET | `/goals` | Returns user's goals | FR-02 |
 | GET | `/catalogs` | Returns Catalogs | FR-03 |
-| POST | `/logs?date=` | Log in selected date | FR-04 |
 | GET | `/logs?date=` | Returns Logs for a date | FR-05 |
+| POST | `/logs?date=` | Log in selected date | FR-04 |
 | PATCH | `/logs` | Soft delete Log | TD-06 |
 
 Request/Response examples:
@@ -212,6 +223,54 @@ Error handling:
 ```
 
 ### DynamoDB Single-Table Model
+
+**DYNAMO USER ENTITY:**
+```
+# PENDING ACCESS
+{
+ "PK": "ACTIVATION#471b8fe8-cb1e-4469-bf41-f702795efa10",
+ "SK": "ACCESS",
+ "Type": "DEVICE"
+ "Status": "PENDING",
+ "CreatedAt": "2026-10-18T19:12:22.495Z",
+}
+
+# ACTIVE ACCESS
+{
+ "PK": "ACTIVATION#471b8fe8-cb1e-4469-bf41-f702795efa10",
+ "SK": "ACCESS",
+ "Type": "DEVICE",
+ "Status": "ACTIVE",
+ "CreatedAt": "2026-10-18T19:12:22.495Z",
+ "UserId": { "S": "USER#U1" },
+ "ActivedAt": { "S": "2026-10-13T10:00:00.000Z" }
+}
+
+# REVOKED ACCESS
+{
+  "PK": { "S": "ACTIVATION#3fa85f64-5717-4562-b3fc-2c963f66afa6" },
+  "SK": { "S": "ACCESS" },
+  "Type": { "S": "DEVICE" },
+  "UserId": { "S": "USER#U1" },
+  "Status": { "S": "REVOKED" },
+  "CreatedAt": { "S": "2026-10-12T10:00:00.000Z" },
+  "ActivedAt": { "S": "2026-10-13T10:00:00.000Z" },
+  "RevokedAt": { "S": "2026-10-14T12:00:00.000Z" }
+}
+
+# DELETED ACCESS
+{
+  "PK": { "S": "ACTIVATION#3fa85f64-5717-4562-b3fc-2c963f66afa6" },
+  "SK": { "S": "ACCESS" },
+  "Type": { "S": "DEVICE" },
+  "UserId": { "S": "USER#U1" },
+  "Status": { "S": "DELETED" },
+  "CreatedAt": { "S": "2026-10-12T10:00:00.000Z" },
+  "ActivedAt": { "S": "2026-10-13T10:00:00.000Z" },
+  "RevokedAt": { "S": "2026-10-14T12:00:00.000Z" },
+  "DeletedAt": { "S": "2026-10-15T12:00:00.000Z" }
+}
+```
 
 **DYNAMO GOAL ENTITY:**
 ```

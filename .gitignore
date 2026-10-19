@@ -3,3 +3,5 @@
 **/.env
 **/.env.*
 app/tracker-api/src/requests/aws-lambda-test.rest
+app/tracker-api/scripts/catalog-seed.js
+app/tracker-api/scripts/catalog-delete.js

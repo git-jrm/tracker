@@ -7,5 +7,6 @@ export const env = {
   AWS_REGION: process.env.AWS_REGION || 'us-east-1',
   DYNAMODB_TABLE_NAME: process.env.DYNAMODB_TABLE_NAME || 'Tracker',
   DB_ADAPTER: process.env.DB_ADAPTER || 'dynamodb',
-  SIMULATED_USER_ID: process.env.SIMULATED_USER_ID || 'U1'
+  SIMULATED_USER_ID: process.env.SIMULATED_USER_ID || 'U1',
+  ENABLE_ACTIVATIONS: process.env.ENABLE_ACTIVATIONS?.trim().toLowerCase() === 'true'
 };

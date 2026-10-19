@@ -1,10 +1,33 @@
 import {
+    GetCommand,
     PutCommand,
     QueryCommand,
     UpdateCommand
 } from '@aws-sdk/lib-dynamodb';
 import { env } from '../config/env.js';
 import { dynamoDB } from './dynamo-client.js';
+
+export const getActivation = async (activationId) => {
+    const response = await dynamoDB.send(new GetCommand({
+        TableName: env.DYNAMODB_TABLE_NAME,
+        Key: { PK: `ACTIVATION#${activationId}`, SK: 'ACCESS' }
+    }));
+    return response.Item ?? null;
+};
+
+export const saveActivation = async (item) => {
+    try {
+        await dynamoDB.send(new PutCommand({
+            TableName: env.DYNAMODB_TABLE_NAME,
+            Item: item,
+            ConditionExpression: 'attribute_not_exists(PK) AND attribute_not_exists(SK)'
+        }));
+        return true;
+    } catch (error) {
+        if (error.name === 'ConditionalCheckFailedException') return false;
+        throw error;
+    }
+};
 
 export const listLogs = async (PK, date) => {
     const Items = [];

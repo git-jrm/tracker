@@ -225,7 +225,7 @@
 </head>
 
 <body>
-    <header class="header">
+    <header class="header" id="app-header" hidden>
         <div class="week-nav-container" id="nav-container">
             <button class="nav-btn" type="button" aria-label="Semana anterior" onclick="shiftWeek(-1)">‹</button>
             <div class="week-nav" id="week-nav"></div>
@@ -234,15 +234,20 @@
         <div class="macros-panel" id="macros-panel"></div>
     </header>
 
-    <main class="list-container">
-        <p id="api-status" role="status" aria-live="polite"></p>
+    <main class="list-container" id="app-content" hidden>
         <div id="logged-list"></div>
         <h2 class="section-title">CATALOG:</h2>
         <div id="food-list"></div>
     </main>
 
+    <p id="api-status" role="status" aria-live="polite"></p>
+
+    <button id="btnActivate" type="button" hidden onclick="requestActivation()">SOLICITAR ACTIVACIÓN</button>
+    <button id="btnDesactivate" type="button" hidden onclick="deleteActivation()">BORRAR DISPOSITIVO</button>
+
     <script src="config.js"></script>
     <script>
+
         // foodDB local queda desactivada: el catálogo se carga con GET /catalogs.
         const params = new URLSearchParams(window.location.search);
         const environment = params.get('env') || 'aws';
@@ -251,6 +256,9 @@
             document.body.textContent = 'Entorno inválido. Usa ?env=local o ?env=aws.';
             throw new Error('Usa ?env=local o ?env=aws.');
         }
+
+        let activationId = localStorage.getItem('activationId');
+        let userId = localStorage.getItem('userId');
 
         const today = new Date();
         const todayString = formatDate(today);
@@ -289,13 +297,86 @@
         }
 
         async function requestApi(path, options = {}) {
-            const response = await fetch(`${API_URL}${path}`, options);
+            const headers = new Headers(options.headers || {});
+            const userId = localStorage.getItem('userId');
+            if (userId) headers.set('X-User-Id', userId);
+
+            const response = await fetch(`${API_URL}${path}`, { ...options, headers });
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || `Error ${response.status}`);
             return result;
         }
 
+        function showApp(isActive) {
+            document.getElementById('app-header').hidden = !isActive;
+            document.getElementById('app-content').hidden = !isActive;
+            //SI LA APP SE MUESTRA SOLO LA PODEMOS DESACTIVAR
+            document.getElementById('btnDesactivate').hidden = !isActive;
+            //SI LA APP NO SE MUESTRA SOLO LA PODEMOS ACTIVAR
+            document.getElementById('btnActivate').hidden = isActive;
+        }
+
+        async function checkActivation() {
+            if (!activationId) {
+                activationId = crypto.randomUUID();
+                localStorage.setItem('activationId', activationId);
+            }
+
+            showApp(false);
+            showStatus('Verificando activación...');
+
+            try {
+                const activation = await requestApi(
+                    `/activations?activationId=${encodeURIComponent(activationId)}`
+                );
+
+                if (activation.Status === 'ACTIVE') {
+                    localStorage.setItem('userId', activation.UserId);
+                    showApp(true);
+                    showStatus(`UserId: ${activation.UserId}`);
+                    return true;
+                }
+
+                showApp(false);
+                showStatus('Dispositivo inactivo.');
+                return false;
+            } catch (error) {
+                showApp(false);
+                showStatus(`No se pudo verificar la activación: ${error.message}`, true);
+                return false;
+            }
+        }
+
+        async function requestActivation() {
+            const button = document.getElementById('btnActivate');
+            //button.disabled = true;
+            showStatus('Enviando solicitud...');
+
+            try {
+                await requestApi('/activations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activationId })
+                });
+                await checkActivation();
+            } catch (error) {
+                //button.disabled = false;
+                showStatus(`No se pudo solicitar la activación: ${error.message}`, true);
+            }
+        }
+
+        function deleteActivation() {
+            if (!confirm('Desea desactivar la app? La activación requiere verificación.')) {
+                return;
+            }
+            localStorage.removeItem('activationId');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('sessionTime');
+            window.location.reload();
+        }
+
         async function start() {
+            if (!await checkActivation()) return;
             setupSwipe();
             renderWeek();
             localStorage.setItem('selectedDate', selectedDate);
@@ -359,18 +440,9 @@
             }
         }
 
-
         // ########################################################
         // ###   FIX TO NOT CHANGE DATE TO CHANGE WEEK - START  ###
         // ########################################################
-
-        /*function shiftWeek(offset) {
-            weekDate.setDate(weekDate.getDate() + offset * 7);
-            const nextDate = dateFromString(selectedDate);
-            nextDate.setDate(nextDate.getDate() + offset * 7);
-            selectedDate = formatDate(nextDate);
-            loadSelectedDate();
-        }*/
         function shiftWeek(offset) {
             weekDate.setDate(weekDate.getDate() + offset * 7);
             renderWeek();
@@ -378,7 +450,6 @@
         // #######################################################
         // ###   FIX TO NOT CHANGE DATE TO CHANGE WEEK - END   ###
         // #######################################################
-
 
         function setupSwipe() {
             const container = document.getElementById('nav-container');

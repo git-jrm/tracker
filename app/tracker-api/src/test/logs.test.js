@@ -3,6 +3,7 @@ import { after, before, describe, it } from 'node:test';
 
 // Tests use the in-memory adapter. The API defaults to DynamoDB outside tests.
 process.env.DB_ADAPTER = 'memory';
+process.env.ENABLE_ACTIVATIONS = 'true';
 const { putItemIfAbsent, queryItems } = await import('../db/simulated-table.js');
 const { default: app } = await import('../app.js');
 
@@ -10,6 +11,11 @@ const testDate = '2099-12-31';
 const emptyDate = '2026-08-01';
 const meal = (label, k, p, c, f) => ({ label, k, p, c, f });
 const activeGoal = { k: 2500, p: 110, c: 180, f: 60 };
+const fetchAsUser = (url, options = {}) => {
+    const headers = new Headers(options.headers || {});
+    headers.set('X-User-Id', 'USER#U1');
+    return fetch(url, { ...options, headers });
+};
 
 //  ACTIVE ITEM MORE RECENT NO DELETED GOAL#<date> BEFORE DATE IF GIVEN AND MAX TODAY
 for (const item of [
@@ -36,8 +42,60 @@ after(async () => {
 });
 
 describe('logs API (contract test.rest)', () => {
+    it('creates a pending device registration and returns its current status', async () => {
+        const activationId = 'test-device-pending';
+        const createResponse = await fetch(`${baseUrl}/activations`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ activationId })
+        });
+
+        assert.equal(createResponse.status, 202);
+        assert.deepEqual(await createResponse.json(), { Status: 'INACTIVE' });
+        assert.equal(queryItems(`ACTIVATION#${activationId}`, 'ACCESS')[0].Status, 'PENDING');
+
+        const getResponse = await fetch(`${baseUrl}/activations?activationId=${activationId}`);
+        assert.equal(getResponse.status, 200);
+        assert.deepEqual(await getResponse.json(), { Status: 'INACTIVE' });
+
+        const repeatedRequest = await fetch(`${baseUrl}/activations`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ activationId })
+        });
+        assert.equal(repeatedRequest.status, 202);
+        assert.deepEqual(await repeatedRequest.json(), { Status: 'INACTIVE' });
+    });
+
+    it('allows access only after an administrator marks the device ACTIVE', async () => {
+        const activationId = 'test-device-active';
+        putItemIfAbsent({
+            PK: `ACTIVATION#${activationId}`,
+            SK: 'ACCESS',
+            Type: 'DEVICE',
+            Status: 'ACTIVE',
+            UserId: 'USER#U1'
+        });
+
+        const response = await fetch(`${baseUrl}/activations?activationId=${activationId}`);
+        assert.equal(response.status, 200);
+        assert.deepEqual(await response.json(), { Status: 'ACTIVE', UserId: 'USER#U1' });
+    });
+
+    it('requires an activationId for activation endpoints', async () => {
+        const getResponse = await fetch(`${baseUrl}/activations`);
+        const createResponse = await fetch(`${baseUrl}/activations`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        assert.equal(getResponse.status, 400);
+        assert.equal(createResponse.status, 400);
+    });
+
     it('1. POST creates a log with the documented response and key', async () => {
-        const response = await fetch(`${baseUrl}/logs?date=${testDate}`, {
+        const response = await fetchAsUser(`${baseUrl}/logs?date=${testDate}`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
@@ -64,13 +122,13 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('rejects malformed meals and invalid or missing dates', async () => {
-        const invalidMeal = await fetch(`${baseUrl}/logs?date=${testDate}`, {
+        const invalidMeal = await fetchAsUser(`${baseUrl}/logs?date=${testDate}`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ Type: 'MEAL', Details: { label: 'almonds', k: '579' } })
         });
-        const missingDate = await fetch(`${baseUrl}/logs`);
-        const invalidDate = await fetch(`${baseUrl}/logs?date=2026-02-30`);
+        const missingDate = await fetchAsUser(`${baseUrl}/logs`);
+        const invalidDate = await fetchAsUser(`${baseUrl}/logs?date=2026-02-30`);
 
         assert.equal(invalidMeal.status, 400);
         assert.equal(missingDate.status, 400);
@@ -78,7 +136,7 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('2. GET returns active meals for the selected day in order', async () => {
-        const response = await fetch(`${baseUrl}/logs?date=${testDate}`);
+        const response = await fetchAsUser(`${baseUrl}/logs?date=${testDate}`);
 
         assert.equal(response.status, 200);
         const storedLog = queryItems('USER#U1', `LOG#${testDate}#`)[0];
@@ -90,7 +148,7 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('GET catalogs returns active catalog meals in order and API format', async () => {
-        const response = await fetch(`${baseUrl}/catalogs`);
+        const response = await fetchAsUser(`${baseUrl}/catalogs`);
 
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), [
@@ -99,15 +157,25 @@ describe('logs API (contract test.rest)', () => {
         ]);
     });
 
+    it('requires X-User-Id for data endpoints', async () => {
+        const response = await fetch(`${baseUrl}/catalogs`);
+
+        assert.equal(response.status, 400);
+        assert.deepEqual(await response.json(), {
+            OK: false,
+            message: 'Valid X-User-Id header is required.'
+        });
+    });
+
     it('3. PATCH soft-deletes a log and it no longer appears in GET', async () => {
-        const createResponse = await fetch(`${baseUrl}/logs?date=${testDate}`, {
+        const createResponse = await fetchAsUser(`${baseUrl}/logs?date=${testDate}`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ Type: 'MEAL', Details: meal('yogurt', 61, 4, 5, 4) })
         });
         const created = await createResponse.json();
 
-        const deleteResponse = await fetch(`${baseUrl}/logs`, {
+        const deleteResponse = await fetchAsUser(`${baseUrl}/logs`, {
             method: 'PATCH',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ SK: created.SK })
@@ -119,7 +187,7 @@ describe('logs API (contract test.rest)', () => {
         assert.equal(deleted.SK, created.SK);
         assert.match(deleted.DeletedAt, /^\d{4}-\d{2}-\d{2}T/);
 
-        const getResponse = await fetch(`${baseUrl}/logs?date=${testDate}`);
+        const getResponse = await fetchAsUser(`${baseUrl}/logs?date=${testDate}`);
         const remainingLog = queryItems('USER#U1', `LOG#${testDate}#`)[0];
         assert.deepEqual(await getResponse.json(), {
             date: testDate,
@@ -129,7 +197,7 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('returns 404 when deleting a nonexistent or already deleted log', async () => {
-        const response = await fetch(`${baseUrl}/logs`, {
+        const response = await fetchAsUser(`${baseUrl}/logs`, {
             method: 'PATCH',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ SK: `LOG#${testDate}#abcdef` })
@@ -139,7 +207,7 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('returns zero totals and an empty logs list when a date has no logs', async () => {
-        const response = await fetch(`${baseUrl}/logs?date=${emptyDate}`);
+        const response = await fetchAsUser(`${baseUrl}/logs?date=${emptyDate}`);
 
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), {
@@ -150,16 +218,16 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('returns the latest non-deleted goal on or before the selected date', async () => {
-        const response = await fetch(`${baseUrl}/goals?date=2026-12-31`);
+        const response = await fetchAsUser(`${baseUrl}/goals?date=2026-12-31`);
 
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), activeGoal);
     });
 
     it('returns null when no goal exists and rejects missing or invalid goal dates', async () => {
-        const noGoal = await fetch(`${baseUrl}/goals?date=${emptyDate}`);
-        const missingDate = await fetch(`${baseUrl}/goals`);
-        const invalidDate = await fetch(`${baseUrl}/goals?date=2026-02-30`);
+        const noGoal = await fetchAsUser(`${baseUrl}/goals?date=${emptyDate}`);
+        const missingDate = await fetchAsUser(`${baseUrl}/goals`);
+        const invalidDate = await fetchAsUser(`${baseUrl}/goals?date=2026-02-30`);
 
         assert.equal(noGoal.status, 200);
         assert.equal(await noGoal.json(), null);
@@ -168,7 +236,7 @@ describe('logs API (contract test.rest)', () => {
     });
 
     it('returns the seeded example logs from the simulated table', async () => {
-        const response = await fetch(`${baseUrl}/logs?date=2026-10-04`);
+        const response = await fetchAsUser(`${baseUrl}/logs?date=2026-10-04`);
 
         assert.deepEqual(await response.json(), {
             date: '2026-10-04',
