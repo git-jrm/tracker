@@ -1,11 +1,16 @@
 import express from 'express';
+import { env } from './config/env.js';
 import logsRoutes from './routes/logs.routes.js';
 import { globalErrorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
 
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5500');
+    const origin = req.headers.origin;
+    if (env.CORS_ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Id');
 
