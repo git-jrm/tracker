@@ -338,7 +338,7 @@
                 }
 
                 showApp(false);
-                showStatus('Dispositivo inactivo.');
+                showStatus(`Dispositivo inactivo: ${activationId}`);
                 return false;
             } catch (error) {
                 showApp(false);
@@ -366,7 +366,7 @@
         }
 
         function deleteActivation() {
-            if (!confirm('Desea borrar el dispositivo y el acceso? La reactivación requiere verificación.')) {
+            if (!confirm(`Desea borrar ${activationId}? La reactivación requiere verificación.`)) {
                 return;
             }
             localStorage.removeItem('activationId');

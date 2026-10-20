@@ -10,6 +10,9 @@
     "catalog:seed": "node scripts/catalog-seed.js",
     "catalog:delete": "node scripts/catalog-delete.js",
     "catalog:reseed": "pnpm run catalog:delete && pnpm run catalog:seed",
+    "user:activate": "node scripts/user-activate.js",
+    "user:copy-catalog": "node scripts/user-copy-catalog.js",
+    "user:copy-logs": "node scripts/user-copy-logs.js",
     "zip": "bash -c 'set -euo pipefail; PROJECT_DIR=\"$PWD\"; STAGE=\"$(mktemp -d)\"; OUT=\"$PROJECT_DIR/tracker-api-lambda-$(date +%Y%m%d-%H%M%S).zip\"; echo \"Carpeta temporal: $STAGE\"; cp -R src package.json pnpm-lock.yaml \"$STAGE/\"; pnpm install --prod --frozen-lockfile --dir \"$STAGE\"; ( cd \"$STAGE\" && zip -qry \"$OUT\" src package.json node_modules ); ls -lh \"$OUT\"; unzip -t \"$OUT\"'"
   },
   "dependencies": {

@@ -90,6 +90,10 @@ La API de datos recibe `X-User-Id: USER#<id>` para seleccionar la partición del
 
 **Configuración AWS:** Lambda requiere `ENABLE_ACTIVATIONS=true`, `DYNAMODB_TABLE_NAME` y `AWS_REGION` correctos. Su rol necesita `dynamodb:GetItem`, `PutItem`, `Query` y `UpdateItem` sobre la tabla `Tracker`. Express gestiona CORS con `CORS_ALLOWED_ORIGINS`; no habilitar simultáneamente CORS en la Function URL, para evitar encabezados duplicados.
 
+Para aprobar un dispositivo manualmente, desde `app/tracker-api` ejecuta `pnpm run user:activate <activationId> <username>` (por ejemplo, `pnpm run user:activate <uuid> U11`). El comando solo activa registros existentes con `Status=PENDING`; usa las credenciales AWS locales y requiere `dynamodb:UpdateItem` sobre la tabla configurada. No lee el elemento antes de actualizarlo.
+
+Para copiar datos entre usuarios, ejecuta `pnpm run user:copy-catalog <origen> <destino>` o `pnpm run user:copy-logs <origen> <destino>` (IDs como `U1` o `USER#U1`). Se conservan los SK y atributos; los logs incluyen también los que tengan `DeletedAt`. El destino debe no tener registros del tipo copiado: los scripts se niegan a sobrescribirlos. Requieren `dynamodb:Query` y `dynamodb:PutItem`.
+
 ### 🔐 API calls JWT Flow
 ```js
 const jwt = require('jsonwebtoken');// explicit verify of alg HS256
