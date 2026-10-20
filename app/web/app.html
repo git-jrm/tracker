@@ -15,6 +15,7 @@
             --orange: #ff9f0a;
             --green: #30d158;
             --light-green: #9be5ae;
+            --light-orange: #ffcb7c;
             --red: #ff453a;
         }
 
@@ -473,13 +474,15 @@
         }*/
 
         function macroColor(percent, type) {
-            if (percent > 120) return type === 'P' ? 'var(--orange)' : 'var(--red)';
-            if (percent > 110) return 'var(--orange)';
-            if (type === 'P' && percent >= 100) return 'var(--green)';
-            if (type === 'K' && percent >= 95) return 'var(--green)';
-            if (type === 'C' && percent >= 90) return 'var(--green)';
-            if (type === 'F' && percent >= 85) return 'var(--green)';
-            return 'var(--light-green)';
+            if (percent > 120) return type === 'P' ? 'var(--orange)' : 'var(--red)'; // alerta
+            if (percent > 110) return 'var(--orange)'; // pre alerta
+            if (type === 'P' && percent >= 95) return 'var(--green)'; // minimo aceptable
+            if (type === 'K' && percent >= 95) return 'var(--green)'; // minimo aceptable
+            if (type === 'C' && percent >= 90) return 'var(--green)'; // minimo aceptable
+            if (type === 'F' && percent >= 85) return 'var(--green)'; // minimo aceptable
+            if ((type === 'P' || type === 'K') && percent >= 85) return 'var(--light-green)'; // minimo absoluto P y K
+            if (percent >= 75) return 'var(--light-green)';  // minimo absoluto C y F
+            return 'var(--light-orange)'; //pendiente light-orange
         }
 
         function renderMacros() {
