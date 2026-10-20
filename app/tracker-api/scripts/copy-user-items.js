@@ -1,14 +1,7 @@
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { env } from '../src/config/env.js';
 import { dynamoDB } from '../src/db/dynamo-client.js';
-
-export const normalizeUserId = (value) => {
-    const username = value?.startsWith('USER#') ? value.slice(5) : value;
-    if (!username || !/^[A-Za-z0-9_-]+$/.test(username)) {
-        throw new Error('Los usuarios deben usar solo letras, números, guion y guion bajo.');
-    }
-    return `USER#${username}`;
-};
+import { normalizeUserId } from './user-id.js';
 
 const listItems = async (PK, prefix) => {
     const items = [];

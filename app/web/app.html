@@ -463,18 +463,28 @@
             });
         }
 
-        function macroColor(percent, type) {
+        /*function macroColor(percent, type) {
             if (percent > 110) return 'var(--red)';
             if (type === 'K' && percent >= 95) return 'var(--green)';
+            if ((type === 'C' || type === 'F') && percent >= 90) return 'var(--green)';
             if (type === 'P' && percent >= 80) return 'var(--green)';
-            if ((type === 'C' || type === 'G') && percent >= 90) return 'var(--green)';
             return 'var(--orange)';
+        }*/
+
+        function macroColor(percent, type) {
+            if (percent > 120) return type === 'P' ? 'var(--orange)' : 'var(--red)';
+            if (percent > 110) return 'var(--orange)';
+            if (type === 'P' && percent >= 100) return 'var(--green)';
+            if (type === 'K' && percent >= 95) return 'var(--green)';
+            if (type === 'C' && percent >= 90) return 'var(--green)';
+            if (type === 'F' && percent >= 85) return 'var(--green)';
+            return 'var(--light-green)';
         }
 
         function renderMacros() {
             const panel = document.getElementById('macros-panel');
             const macros = [
-                ['k', 'K'], ['p', 'P'], ['c', 'C'], ['f', 'G']
+                ['k', 'K'], ['p', 'P'], ['c', 'C'], ['f', 'F']
             ];
             panel.replaceChildren();
 
@@ -502,7 +512,7 @@
             label.textContent = meal.label;
             const macros = document.createElement('span');
             macros.className = 'item-macros';
-            macros.textContent = `${meal.k}K | ${meal.p}P | ${meal.c}C | ${meal.f}G`;
+            macros.textContent = `${meal.k}K | ${meal.p}P | ${meal.c}C | ${meal.f}F`;
             if (isCatalog) macros.style.marginRight = '5px';
             name.append(label, macros);
             info.appendChild(name);

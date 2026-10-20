@@ -1,14 +1,21 @@
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { env } from '../src/config/env.js';
 import { dynamoDB } from '../src/db/dynamo-client.js';
+import { normalizeUserId } from './user-id.js';
 
 const [activationId, username, deviceName, ...extraArgs] = process.argv.slice(2);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const usernamePattern = /^[A-Za-z0-9_-]+$/;
 const cleanDeviceName = deviceName?.trim();
+let userId;
+
+try {
+    userId = normalizeUserId(username);
+} catch {
+    userId = null;
+}
 
 if (!uuidPattern.test(activationId ?? '') ||
-    !usernamePattern.test(username ?? '') ||
+    !userId ||
     extraArgs.length > 0 ||
     (deviceName !== undefined && (!cleanDeviceName || cleanDeviceName.length > 100))) {
     console.error('Uso: pnpm run user:activate <activationId UUID> <username> [DeviceName]');
@@ -19,7 +26,7 @@ if (!uuidPattern.test(activationId ?? '') ||
         ':active': 'ACTIVE',
         ':pending': 'PENDING',
         ':device': 'DEVICE',
-        ':userId': `USER#${username}`,
+        ':userId': userId,
         ':now': new Date().toISOString()
     };
 
@@ -44,7 +51,7 @@ if (!uuidPattern.test(activationId ?? '') ||
             ExpressionAttributeValues: values
         }));
 
-        console.log(`Activado: ${activationId} -> USER#${username}`);
+        console.log(`Activado: ${activationId} -> ${userId}`);
     } catch (error) {
         if (error.name === 'ConditionalCheckFailedException') {
             console.error('No se activó: debe existir y estar PENDING con Type=DEVICE.');
