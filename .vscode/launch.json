@@ -20,6 +20,14 @@
             "webRoot": "${workspaceFolder}",
             "runtimeExecutable": "/usr/bin/chromium-browser",
             "userDataDir": false
+        },
+        {
+            "type": "firefox",
+            "request": "launch",
+            "name": "Depurar con Firefox y Live Server",
+            "url": "http://127.0.0.1:5500/app/web/index.html?env=local",
+            "webRoot": "${workspaceFolder}",
+            "firefoxExecutable": "/usr/bin/firefox"
         }
     ]
 }

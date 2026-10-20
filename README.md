@@ -79,17 +79,16 @@ Security considerations are treated as part of the design and architecture rathe
 
 ### 🔐 ADR-01: Registro y activación de dispositivo
 
-1. El navegador genera el actual un `activationId` aleatorio en `localStorage`.
-2. `GET /v1/activations?activationId=<id>` devuelve `ACTIVE` en cualquier otro caso `INACTIVE`.
--ACTIVE=true: showApp(true), hide btnActivate para no duplicar solicitud, show btnDesactivate para forzar nuevo UUID.
--ACTIVE=false: showApp(false), show btnActivate para enviar POST, hide btnDesactivate ya que aun no se ha enviado solicitud para activar oel admin no ha validado el registro.
-3. El usuario solicita activación con `POST /v1/activations` y `{ "activationId": "<id>" }`. La API guarda `Status: PENDING` y responde `202`.
-4. El administrador cambia el registro `PK=ACTIVATION#<id>`, `SK=ACCESS` a `Status=ACTIVE` en DynamoDB.
-5. Al volver a consultar, la interfaz muestra la aplicación solo si recibe `Status=ACTIVE`.
+1. El navegador guarda un `activationId` aleatorio en `localStorage`.
+2. `GET /v1/activations?activationId=<id>` devuelve `ACTIVE` o `INACTIVE` (incluye inexistente, pendiente o revocado).
+3. `POST /v1/activations` con `{ "activationId": "<id>" }` registra el dispositivo como `PENDING` y responde `202`.
+4. Un administrador cambia en DynamoDB `PK=ACTIVATION#<id>`, `SK=ACCESS` a `Status=ACTIVE`. La app se muestra únicamente tras una consulta que devuelve `ACTIVE`.
 
-El botón «Olvidar este dispositivo» borra el identificador únicamente del navegador; **no revoca ni elimina** el registro de DynamoDB. Para revocarlo, el administrador debe cambiar su estado.
+«Borrar dispositivo» solo elimina `activationId` y `userId` del navegador; no revoca el registro en DynamoDB.
 
-**Alcance actual:** la activación controla qué muestra la interfaz, pero no protege todavía los endpoints de datos. La autorización de API queda pendiente para ADR-02/JWT; no se debe considerar esta etapa una barrera de seguridad.
+La API de datos recibe `X-User-Id: USER#<id>` para seleccionar la partición del usuario. **No es autenticación:** puede falsificarse y la activación solo controla la interfaz. Proteger los endpoints requiere completar ADR-02/JWT.
+
+**Configuración AWS:** Lambda requiere `ENABLE_ACTIVATIONS=true`, `DYNAMODB_TABLE_NAME` y `AWS_REGION` correctos. Su rol necesita `dynamodb:GetItem`, `PutItem`, `Query` y `UpdateItem` sobre la tabla `Tracker`. Express gestiona CORS con `CORS_ALLOWED_ORIGINS`; no habilitar simultáneamente CORS en la Function URL, para evitar encabezados duplicados.
 
 ### 🔐 API calls JWT Flow
 ```js
