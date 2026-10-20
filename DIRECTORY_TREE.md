@@ -13,21 +13,21 @@ node_modules/
 │   ├── routes/               # endpoints def (GET, POST, etc.)
 │   │   └── usuarios.routes.js
 │   └── app.js                # Inicialización Express y middlewares globales
-package.json              # Configuración del proyecto y scripts
-server.js      <-- Servidor del backend
+package.json                  # Configuración del proyecto y scripts
+server.js                  <-- Servidor del backend
 ...
 │   │
 │   ├── db/
-│   │   ├── iac.yaml       <-- Tu código de IaC (ej. AWS CloudFormation o SAM)
+│   │   ├── iac.yaml        <-- Tu código de IaC (ej. AWS CloudFormation o SAM)
 │   │   ├── create-table.js <-- Script nativo para crear la tabla (SDK de Dynamo)
-│   │   └── client.js      <-- Configuración y cliente de conexión a DynamoDB
+│   │   └── client.js       <-- Configuración y cliente de conexión a DynamoDB
 │   │
-│   ├── requests/          <-- Carpeta para pruebas HTTP locales
-│   │   ├── api.rest       <-- Peticiones directas a tu API local
+│   ├── requests/           <-- Carpeta para pruebas HTTP locales
+│   │   ├── api.rest        <-- Peticiones directas a tu API local
 │   │   └── aws-dynamo.rest <-- (Opcional) Peticiones directas a Dynamo Local
 │   │
 │   └── web/
-│       ├── index.html     <-- Frontend nativo
+│       ├── app.html       <-- Frontend nativo
 │       ├── styles.css
 │       └── app.js         <-- Lógica del cliente
 │
