@@ -474,8 +474,8 @@
         }*/
 
         function macroColor(percent, type) {
-            if (percent > 125) return type === 'F' ? 'var(--orange)' : 'var(--red)'; // alerta
-            if (percent > 120) return type === 'P' ? 'var(--orange)' : 'var(--red)'; // alerta
+            if (type === 'F' && percent > 130) return 'var(--red)';
+            if (percent > 120) return type === 'P' || type === 'F' ? 'var(--orange)' : 'var(--red)';
             if (percent > 110) return 'var(--orange)'; // pre alerta
             if (type === 'P' && percent >= 95) return 'var(--green)'; // minimo aceptable
             if (type === 'K' && percent >= 95) return 'var(--green)'; // minimo aceptable
