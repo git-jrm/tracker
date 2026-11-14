@@ -1,5 +1,5 @@
 # 🎯 Tracker
-A simple app for tracking meals to achieve yours goals in 1-click.
+A prototype app for simple tracking meals to achieve yours goals in 1-click.
 
 ## 📋 Executive Summary
 Tracker is built on a simple premise: less is more. Keep deliberately minimal design and remove friction make user's data private by defaul and logging a meal in 1-click.
