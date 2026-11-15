@@ -63,9 +63,7 @@ Trade-off: Lacks ID unpredictability.
 ## 🛠️ II. SecDevOps: Principles & Patterns
 
 > [!NOTE]
-> [Software Design](https://github.com/git-jrm/software-design)
-
-See [software-design](https://github.com/git-jrm/software-design) for the principles and patterns applied.
+> See [software-design](https://github.com/git-jrm/software-design) for the principles and patterns applied.
 
 ### 🔐 Security
 Security considerations are treated as part of the design and architecture rather than as a separate concern. The project aims to follow principles such as:
